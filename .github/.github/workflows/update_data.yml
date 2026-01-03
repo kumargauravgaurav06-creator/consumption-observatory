@@ -1,0 +1,32 @@
+name: Daily Data Refresh
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every day at midnight
+  workflow_dispatch:      # Allows you to click a button to run it manually
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run Data Robot
+        run: python scripts/fetch_data.py
+
+      - name: Save New Data
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add global_stats.json
+          git commit -m "🤖 Auto-update: Fresh data from World Bank" || exit 0
+          git push
