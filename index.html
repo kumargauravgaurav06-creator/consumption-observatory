@@ -2,137 +2,231 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ConsumptionPulse V9</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsumptionPulse | Global Observatory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-950 text-white p-6 font-sans">
+<body class="bg-slate-950 text-white antialiased selection:bg-emerald-500/30">
 
-    <div class="border-b border-slate-800 pb-4 mb-6 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-emerald-400">
-            ConsumptionPulse 
-            <span class="bg-blue-500 text-white text-sm px-2 py-1 rounded ml-2">V9.0 Diagnostic</span>
-        </h1>
-        <div id="status" class="text-yellow-400 font-mono text-sm">System: Scanning...</div>
-    </div>
-
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-slate-900 p-4 rounded border border-slate-800">
-            <div class="text-slate-500 text-xs uppercase">USA Energy</div>
-            <div id="usa" class="text-3xl font-bold mt-2">Loading...</div>
+    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
+            </div>
+            <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                SYSTEM ACTIVE
+            </div>
         </div>
-        <div class="bg-slate-900 p-4 rounded border border-slate-800">
-            <div class="text-slate-500 text-xs uppercase">China Energy</div>
-            <div id="chn" class="text-3xl font-bold mt-2">Loading...</div>
-        </div>
-        <div class="bg-slate-900 p-4 rounded border border-slate-800">
-            <div class="text-slate-500 text-xs uppercase">India Energy</div>
-            <div id="ind" class="text-3xl font-bold mt-2">Loading...</div>
-        </div>
-    </div>
+    </nav>
 
-    <div class="bg-slate-900 p-4 rounded border border-slate-800 h-64 mb-6">
-        <canvas id="myChart"></canvas>
-    </div>
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors group">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">United States</p>
+                    <span class="text-emerald-500/20 group-hover:text-emerald-500 transition-colors">●</span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-white" id="val-USA">---</span>
+                    <span class="text-sm text-slate-500 font-medium">kWh</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-600">Energy use per capita</div>
+            </div>
 
-    <div id="logs" class="bg-black p-4 font-mono text-xs text-green-400 h-40 overflow-y-auto border border-green-900">
-        > V9 System initialized.<br>
-    </div>
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors group">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">China</p>
+                    <span class="text-emerald-500/20 group-hover:text-emerald-500 transition-colors">●</span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-white" id="val-CHN">---</span>
+                    <span class="text-sm text-slate-500 font-medium">kWh</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-600">Energy use per capita</div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors group">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">India</p>
+                    <span class="text-emerald-500/20 group-hover:text-emerald-500 transition-colors">●</span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-4xl font-bold text-white" id="val-IND">---</span>
+                    <span class="text-sm text-slate-500 font-medium">kWh</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-600">Energy use per capita</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col h-full">
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-white">Compare Economies</h2>
+                    <p class="text-sm text-slate-400 mt-1">Analyze energy disparity between nations using real-time World Bank data.</p>
+                </div>
+                
+                <div class="space-y-4 flex-grow">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Baseline Nation</label>
+                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                            <option value="USA">United States</option>
+                            <option value="EUU">European Union</option>
+                            <option value="CHN">China</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Comparison Target</label>
+                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                            <option value="IND">India</option>
+                            <option value="BRA">Brazil</option>
+                            <option value="NGA">Nigeria</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="updateChart()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-lg transition-all shadow-lg shadow-emerald-900/20 active:scale-[0.98] flex justify-center items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                    Run Comparison
+                </button>
+            </div>
+
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 h-[400px] relative">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <footer class="text-center text-slate-600 text-xs py-8">
+            Data sourced automatically from World Bank API • Auto-refresh daily at 00:00 UTC
+        </footer>
+
+    </main>
 
     <script>
-        // GLOBAL CHART VARIABLE (Fixes the canvas crash)
+        // --- CONFIGURATION ---
         let myChart = null;
-
-        function log(msg) {
-            document.getElementById('logs').innerHTML += `> ${msg}<br>`;
-        }
-
+        let realData = {};
+        
+        // Backup data in case of first-load issues
         const BACKUP = {
-            "USA": { energy: 6800 }, "CHN": { energy: 2300 }, "IND": { energy: 700 }
+            "USA": { energy: 6364 }, "CHN": { energy: 2851 }, "IND": { energy: 754 },
+            "EUU": { energy: 2900 }, "BRA": { energy: 1400 }, "NGA": { energy: 600 }
         };
 
-        function updateScreen(data, source) {
-            log(`--------------------------`);
-            log(`Rendering Source: ${source}`);
+        // --- CORE FUNCTIONS ---
 
-            // 1. DATA INSPECTION (X-Ray)
-            // If we are live, print the keys to see why numbers are missing
-            if (source === "LIVE_FEED") {
-                const keys = Object.keys(data).join(", ");
-                log(`Available Keys in Data: [${keys}]`);
+        async function init() {
+            // 1. Load Data
+            try {
+                // Try to fetch the live file generated by your robot
+                let response = await fetch('global_data.json?t=' + Date.now());
+                
+                // Fallback to stats file if data file missing
+                if (!response.ok) response = await fetch('global_stats.json?t=' + Date.now());
+                
+                if (response.ok) {
+                    const json = await response.json();
+                    // Handle different possible structures
+                    if (json.data) realData = json.data;
+                    else if (json.records) realData = json.records;
+                    else realData = json;
+                } else {
+                    console.warn("Using Backup Data");
+                    realData = BACKUP;
+                }
+            } catch (e) {
+                console.error(e);
+                realData = BACKUP;
             }
-            
-            // 2. SAFE DATA GETTER (Try uppercase AND lowercase)
-            const getVal = (code) => {
-                let entry = data[code] || data[code.toLowerCase()]; 
-                return entry && entry.energy ? entry.energy.toLocaleString() : "---";
-            };
-            const getRaw = (code) => {
-                let entry = data[code] || data[code.toLowerCase()];
-                return entry && entry.energy ? entry.energy : 0;
-            };
 
-            document.getElementById('usa').innerText = getVal('USA');
-            document.getElementById('chn').innerText = getVal('CHN');
-            document.getElementById('ind').innerText = getVal('IND');
+            // 2. Update UI
+            updateScorecards();
+            drawChart();
+        }
+
+        function getMetric(code) {
+            // Smart getter that handles lowercase/uppercase keys
+            const entry = realData[code] || realData[code.toLowerCase()];
+            return entry ? entry.energy : 0;
+        }
+
+        function updateScorecards() {
+            const setVal = (id, code) => {
+                const el = document.getElementById(id);
+                if(el) {
+                    const val = getMetric(code);
+                    el.innerText = val ? val.toLocaleString() : "---";
+                }
+            };
+            setVal('val-USA', 'USA');
+            setVal('val-CHN', 'CHN');
+            setVal('val-IND', 'IND');
+        }
+
+        function drawChart() {
+            const ctx = document.getElementById('mainChart');
             
-            document.getElementById('status').innerText = `System: Active (${source})`;
-            document.getElementById('status').className = "text-emerald-400 font-mono text-sm";
-            
-            // 3. CHART CLEANUP (The Crash Fix)
-            const ctx = document.getElementById('myChart');
-            if (myChart) {
-                myChart.destroy(); // Wipe the old chart first
-            }
+            // Cleanup old chart to prevent "Canvas already in use" error
+            if (myChart) myChart.destroy();
+
+            // Default comparison
+            const baseCode = document.getElementById('baselineSelect').value;
+            const targetCode = document.getElementById('targetSelect').value;
+            const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
+            const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
 
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['USA', 'China', 'India'],
+                    labels: [baseName, targetName],
                     datasets: [{
-                        label: 'Energy Use (kWh)',
-                        data: [getRaw('USA'), getRaw('CHN'), getRaw('IND')],
-                        backgroundColor: ['#3b82f6', '#f59e0b', '#10b981']
+                        label: 'Energy Use (kg of oil equivalent per capita)',
+                        data: [getMetric(baseCode), getMetric(targetCode)],
+                        backgroundColor: ['#3b82f6', '#10b981'],
+                        borderRadius: 6,
+                        barThickness: 80
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#94a3b8',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            borderColor: '#1e293b',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: '#1e293b' }, 
+                            ticks: { color: '#64748b', font: {family: 'Inter'} }, 
+                            beginAtZero: true 
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#94a3b8', font: {family: 'Inter', weight: '600'} } 
+                        }
+                    }
+                }
             });
         }
 
-        async function start() {
-            updateScreen(BACKUP, "BACKUP_MODE");
-
-            log("Connecting to live database...");
-            try {
-                let res = await fetch('global_data.json?t=' + Date.now());
-                if (!res.ok) res = await fetch('global_stats.json?t=' + Date.now());
-
-                if (res.ok) {
-                    const json = await res.json();
-                    let validData = null;
-
-                    // DEEP SEARCH FOR DATA
-                    if (json.records) {
-                        validData = json.records;
-                    } else if (json.data) {
-                        validData = json.data;
-                    } else {
-                        validData = json;
-                    }
-
-                    if (validData) {
-                        log("SUCCESS: Live data unlocked.");
-                        updateScreen(validData, "LIVE_FEED");
-                    }
-                } else {
-                    log("Warning: Live file not found.");
-                }
-            } catch (e) {
-                log("Error: " + e.message);
-            }
+        function updateChart() {
+            drawChart(); // Redraw with new selection
         }
 
-        start();
+        // --- START ---
+        init();
     </script>
 </body>
 </html>
