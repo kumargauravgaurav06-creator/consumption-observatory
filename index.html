@@ -18,7 +18,7 @@
                 <h1 class="text-xl font-bold text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
             </div>
             <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                SYSTEM STATUS: <span class="text-emerald-400">SYSTEM ACTIVE</span>
+                LAST UPDATE: <span id="lastUpdate" class="text-emerald-400">Connecting...</span>
             </div>
         </div>
     </nav>
@@ -84,34 +84,29 @@
         let myChart;
         let realData = {};
 
-        // 1. Fetch the data your Robot saved
         async function loadData() {
             try {
-                // Add a timestamp to the URL to prevent caching (forces browser to get fresh file)
+                // TRICK: We add a random number (?t=...) to the URL.
+                // This forces the browser to ignore the cache and get the NEW file.
                 const response = await fetch('global_stats.json?t=' + new Date().getTime());
+                
                 if (!response.ok) {
-                    throw new Error("File not found");
+                    throw new Error("File missing");
                 }
+
                 const json = await response.json();
-                
                 realData = json.data;
-                // Check if last_updated exists
-                if (json.last_updated) {
-                     document.querySelector('.text-xs.font-mono .text-emerald-400').innerText = "DATA LOADED";
-                }
-                
-                // Initialize with default view
+                document.getElementById('lastUpdate').innerText = json.last_updated;
                 initChart();
             } catch (error) {
-                console.error("Error loading robot data:", error);
-                // Keep the error message hidden in console, but chart won't load
-                alert("Still initializing... Please wait 1 minute and refresh.");
+                console.error(error);
+                document.getElementById('lastUpdate').innerText = "Retry in 5s...";
+                // If it fails, try again automatically in 3 seconds
+                setTimeout(loadData, 3000);
             }
         }
 
-        // 2. Draw the Chart
         function initChart() {
-            // Default to USA vs India
             const baseVal = realData['USA'] ? realData['USA'].energy : 0;
             const targetVal = realData['IND'] ? realData['IND'].energy : 0;
 
@@ -120,7 +115,7 @@
                 data: {
                     labels: ['United States', 'India'],
                     datasets: [{
-                        label: 'Energy Use (kg of oil equiv. per capita)',
+                        label: 'Energy Use (kg/capita)',
                         data: [baseVal, targetVal],
                         backgroundColor: ['#3b82f6', '#10b981'],
                         borderRadius: 6,
@@ -139,11 +134,9 @@
             });
         }
 
-        // 3. Update on Button Click
         function updateChart() {
             const baseCode = document.getElementById('baselineSelect').value;
             const targetCode = document.getElementById('targetSelect').value;
-            
             const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
             const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
 
@@ -155,7 +148,6 @@
             myChart.update();
         }
 
-        // Start everything
         loadData();
     </script>
 </body>
