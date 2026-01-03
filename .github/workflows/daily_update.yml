@@ -1,6 +1,5 @@
 name: Daily Data Refresh
 
-# Trigger: Run this every day at midnight OR when I click a button manually
 on:
   schedule:
     - cron: '0 0 * * *'
@@ -30,4 +29,5 @@ jobs:
           git config --global user.email "actions@github.com"
           git add global_data.json
           git commit -m "Auto-update: Fresh data from World Bank" || echo "No changes to commit"
+          git pull --rebase
           git push
