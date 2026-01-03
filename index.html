@@ -3,219 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Consumption Observatory</title>
+    <title>ConsumptionPulse | Global Observatory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="bg-[#0f172a] text-slate-300 antialiased min-h-screen">
+<body class="bg-[#0b1121] text-slate-300 min-h-screen pb-20">
 
-    <nav class="border-b border-slate-800 bg-[#0f172a]/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-emerald-400 text-2xl mr-2">🌍</span>
-                    <span class="font-bold text-white text-lg tracking-tight">Consumption<span class="text-emerald-400">Pulse</span></span>
-                </div>
-                <div class="text-xs font-mono bg-slate-800 px-3 py-1 rounded text-slate-400">
-                    <span class="w-2 h-2 inline-block bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
-                    SYSTEM ONLINE
-                </div>
+    <nav class="border-b border-slate-800 bg-[#0b1121]/90 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="font-bold text-white tracking-tight">Consumption<span class="text-emerald-500">Pulse</span></span>
             </div>
+            <div id="lastUpdated" class="text-xs font-mono text-slate-500">SYSTEM LOADING...</div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        
-        <div class="text-center mb-16">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Global Energy Tracker</h1>
-            <p class="text-slate-400 max-w-2xl mx-auto">
-                Real-time analysis of energy consumption (kg of oil equivalent per capita).
-                Automated daily via World Bank Open Data API.
-            </p>
-            <p id="lastUpdated" class="mt-4 text-xs text-slate-600 uppercase tracking-widest">Loading timestamp...</p>
-        </div>
+    <main class="max-w-7xl mx-auto px-6 py-8">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-            <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur">
-                <h3 class="text-emerald-400 font-semibold mb-4 text-sm uppercase tracking-wider">Compare Nations</h3>
-                
+        <div class="grid lg:grid-cols-12 gap-6 mb-8">
+            <div class="lg:col-span-4 glass rounded-xl p-6">
+                <h2 class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">Comparative Analysis</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Country A</label>
-                        <select id="countryA" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5">
-                            <option>Loading...</option>
-                        </select>
+                        <label class="text-xs text-slate-400">Baseline Nation</label>
+                        <select id="countryA" onchange="updateComparison()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"></select>
                     </div>
-                    
-                    <div class="flex justify-center text-slate-500 text-xl font-bold">VS</div>
-                    
+                    <div class="flex justify-center"><span class="text-xs font-mono text-slate-600">VS</span></div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Country B</label>
-                        <select id="countryB" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5">
-                            <option>Loading...</option>
-                        </select>
+                        <label class="text-xs text-slate-400">Target Nation</label>
+                        <select id="countryB" onchange="updateComparison()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"></select>
                     </div>
-
-                    <button onclick="updateComparison()" class="w-full mt-4 text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-800 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">
-                        Analyze Difference
-                    </button>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur flex flex-col justify-center items-center text-center relative overflow-hidden">
-                <div id="comparisonResult" class="relative z-10">
-                    <p class="text-slate-500 italic">Select two countries and click Analyze to see the comparison.</p>
+            <div class="lg:col-span-8 glass rounded-xl p-6 flex flex-col justify-center">
+                <div id="scorecard" class="space-y-6">
+                    <div class="text-center text-slate-500 animate-pulse">Initializing Neural Link...</div>
                 </div>
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
             </div>
         </div>
 
-        <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur shadow-xl">
-            <h3 class="text-white font-semibold mb-6">Top 20 Consumers Leaderboard</h3>
-            <div class="relative h-96 w-full">
+        <div class="glass rounded-xl p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <h3 class="text-white font-semibold">Global Metrics Explorer</h3>
+                <div class="flex bg-slate-900 rounded-lg p-1">
+                    <button onclick="switchChart('energy')" class="px-4 py-1.5 text-xs font-medium rounded-md text-white bg-slate-700 shadow-sm transition-all" id="btn-energy">Energy</button>
+                    <button onclick="switchChart('co2')" class="px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all" id="btn-co2">CO₂</button>
+                    <button onclick="switchChart('gdp')" class="px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all" id="btn-gdp">GDP</button>
+                </div>
+            </div>
+            <div class="relative h-80 w-full">
                 <canvas id="mainChart"></canvas>
             </div>
         </div>
 
     </main>
 
-    <footer class="border-t border-slate-800 mt-20 bg-slate-900 py-8">
-        <div class="max-w-7xl mx-auto px-4 text-center text-slate-600 text-sm">
-            <p>Built with Zero-Cost Architecture</p>
-            <p class="mt-2">Data Source: World Bank API • Hosted on Vercel • Powered by GitHub Actions</p>
-        </div>
-    </footer>
-
     <script>
         let globalData = [];
+        let chartInstance = null;
 
-        async function initDashboard() {
+        // Colors
+        const THEME = {
+            energy: { color: '#10b981', label: 'Energy Use (kg oil/capita)' }, // Emerald
+            co2:    { color: '#f59e0b', label: 'CO₂ Emissions (tons/capita)' }, // Amber
+            gdp:    { color: '#3b82f6', label: 'GDP per Capita (USD)' }         // Blue
+        };
+
+        async function init() {
             try {
-                // 1. Fetch Data
-                const response = await fetch('global_data.json');
-                const json = await response.json();
-                
-                // Update Timestamp
-                document.getElementById('lastUpdated').innerText = "LAST UPDATED: " + new Date(json.last_updated).toLocaleString();
+                const res = await fetch('global_data.json');
+                const json = await res.json();
                 
                 globalData = json.records;
+                document.getElementById('lastUpdated').innerText = "DATA: " + new Date(json.last_updated).toISOString().split('T')[0];
 
-                // 2. Populate Dropdowns
-                const selectA = document.getElementById('countryA');
-                const selectB = document.getElementById('countryB');
-                selectA.innerHTML = ''; selectB.innerHTML = '';
-
-                // Sort alphabetically for the dropdowns
-                const alphaSorted = [...globalData].sort((a, b) => a.country.localeCompare(b.country));
-
-                alphaSorted.forEach(item => {
-                    const optionA = new Option(item.country, item.energy_use);
-                    const optionB = new Option(item.country, item.energy_use);
-                    selectA.add(optionA);
-                    selectB.add(optionB);
+                // Populate Dropdowns
+                const sorted = [...globalData].sort((a,b) => a.country.localeCompare(b.country));
+                const selA = document.getElementById('countryA');
+                const selB = document.getElementById('countryB');
+                
+                sorted.forEach(c => {
+                    selA.add(new Option(c.country, c.code));
+                    selB.add(new Option(c.country, c.code));
                 });
 
-                // Set defaults (USA vs China as example)
-                selectA.value = globalData.find(x => x.country.includes("United States"))?.energy_use || globalData[0].energy_use;
-                selectB.value = globalData.find(x => x.country.includes("China"))?.energy_use || globalData[1].energy_use;
+                // Set Smart Defaults
+                selA.value = sorted.find(c => c.country === "United States")?.code || sorted[0].code;
+                selB.value = sorted.find(c => c.country === "China")?.code || sorted[1].code;
 
-                // 3. Draw Main Chart
-                drawMainChart(globalData.slice(0, 20)); // Top 20 only
-                
-                // Run initial comparison
                 updateComparison();
+                switchChart('energy'); // Default view
 
-            } catch (error) {
-                console.error("Dashboard Error:", error);
-                document.getElementById('lastUpdated').innerText = "System Error: Could not load data.";
+            } catch (e) {
+                console.error(e);
             }
         }
 
         function updateComparison() {
-            const selectA = document.getElementById('countryA');
-            const selectB = document.getElementById('countryB');
+            const codeA = document.getElementById('countryA').value;
+            const codeB = document.getElementById('countryB').value;
             
-            const nameA = selectA.options[selectA.selectedIndex].text;
-            const valA = parseFloat(selectA.value);
-            
-            const nameB = selectB.options[selectB.selectedIndex].text;
-            const valB = parseFloat(selectB.value);
+            const dataA = globalData.find(c => c.code === codeA);
+            const dataB = globalData.find(c => c.code === codeB);
 
-            const resultDiv = document.getElementById('comparisonResult');
-            
-            // Calculate difference
-            let diff = 0;
-            let msg = "";
-            let colorClass = "text-white";
-            
-            if(valA > valB) {
-                diff = ((valA - valB) / valB * 100).toFixed(1);
-                msg = `<span class="text-3xl md:text-5xl font-bold text-white block mb-2">${nameA}</span> 
-                       uses <span class="text-emerald-400 font-bold">${diff}% MORE</span> energy per person than ${nameB}.`;
-            } else if (valB > valA) {
-                diff = ((valB - valA) / valA * 100).toFixed(1);
-                msg = `<span class="text-3xl md:text-5xl font-bold text-white block mb-2">${nameA}</span> 
-                       uses <span class="text-emerald-400 font-bold">${diff}% LESS</span> energy per person than ${nameB}.`;
-            } else {
-                msg = "Both countries have approximately equal consumption.";
-            }
+            if(!dataA || !dataB) return;
 
-            resultDiv.innerHTML = `
-                <div class="animate-fade-in-up">
-                    ${msg}
-                    <div class="mt-6 flex gap-8 justify-center items-end h-32">
-                        <div class="w-16 bg-blue-500 rounded-t-lg transition-all duration-500" style="height: ${Math.min(100, (valA/valB)*50)}%"></div>
-                        <div class="w-16 bg-emerald-500 rounded-t-lg transition-all duration-500" style="height: ${Math.min(100, (valB/valA)*50)}%"></div>
+            // Generate the 3-Row Comparison Card
+            const metrics = [
+                { key: 'energy', name: 'Energy Consumption', unit: 'kg', color: 'bg-emerald-500' },
+                { key: 'co2', name: 'Carbon Emissions', unit: 't', color: 'bg-amber-500' },
+                { key: 'gdp', name: 'Economic Output', unit: '$', color: 'bg-blue-500' }
+            ];
+
+            let html = `<div class="grid grid-cols-3 gap-4 text-center mb-4 border-b border-slate-700 pb-4">
+                            <div class="text-xl font-bold text-white">${dataA.country}</div>
+                            <div class="text-xs text-slate-500 font-mono pt-2">VS</div>
+                            <div class="text-xl font-bold text-white">${dataB.country}</div>
+                        </div>`;
+
+            metrics.forEach(m => {
+                const valA = dataA[m.key];
+                const valB = dataB[m.key];
+                const max = Math.max(valA, valB) * 1.2; // Scale factor
+                
+                html += `
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>${valA.toLocaleString()} ${m.unit}</span>
+                        <span class="font-bold text-slate-200">${m.name}</span>
+                        <span>${valB.toLocaleString()} ${m.unit}</span>
                     </div>
-                    <div class="flex gap-8 justify-center text-xs text-slate-400 mt-2 font-mono">
-                        <div class="w-16">${valA.toLocaleString()}</div>
-                        <div class="w-16">${valB.toLocaleString()}</div>
+                    <div class="flex h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="flex justify-end w-1/2 pr-1 border-r border-slate-900">
+                            <div class="${m.color} rounded-l-full opacity-80" style="width: ${(valA/max)*100}%"></div>
+                        </div>
+                        <div class="flex justify-start w-1/2 pl-1">
+                            <div class="${m.color} rounded-r-full" style="width: ${(valB/max)*100}%"></div>
+                        </div>
                     </div>
-                </div>
-            `;
+                </div>`;
+            });
+
+            document.getElementById('scorecard').innerHTML = html;
         }
 
-        function drawMainChart(data) {
+        function switchChart(metric) {
+            // Update Buttons
+            ['energy', 'co2', 'gdp'].forEach(m => {
+                const btn = document.getElementById('btn-' + m);
+                if(m === metric) {
+                    btn.className = "px-4 py-1.5 text-xs font-medium rounded-md text-white bg-slate-700 shadow-sm transition-all";
+                } else {
+                    btn.className = "px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all";
+                }
+            });
+
+            // Prepare Data (Top 20 by selected metric)
+            const sorted = [...globalData].sort((a,b) => b[metric] - a[metric]).slice(0, 20);
+
             const ctx = document.getElementById('mainChart').getContext('2d');
-            new Chart(ctx, {
+            
+            if(chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: data.map(d => d.country),
+                    labels: sorted.map(d => d.country),
                     datasets: [{
-                        label: 'Energy Consumption',
-                        data: data.map(d => d.energy_use),
-                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        borderWidth: 1,
+                        label: THEME[metric].label,
+                        data: sorted.map(d => d[metric]),
+                        backgroundColor: THEME[metric].color,
                         borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { 
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#94a3b8' } 
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8', autoSkip: false, maxRotation: 45, minRotation: 45 } 
-                        }
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
                     }
                 }
             });
         }
 
-        // Start
-        initDashboard();
+        init();
     </script>
 </body>
 </html>
