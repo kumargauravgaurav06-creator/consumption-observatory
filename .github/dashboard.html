@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsumptionPulse V5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body { font-family: sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-white p-4">
+
+    <div class="max-w-4xl mx-auto mb-8 border-b border-slate-800 pb-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-emerald-400">ConsumptionPulse <span class="text-white bg-slate-800 px-2 py-1 rounded text-sm ml-2">V5.0</span></h1>
+        <div id="statusBox" class="text-xs font-mono text-yellow-400">System: Starting...</div>
+    </div>
+
+    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-slate-900 p-6 rounded border border-slate-800">
+            <div class="text-slate-400 text-xs uppercase">USA Energy</div>
+            <div id="usa-val" class="text-3xl font-bold mt-2">---</div>
+        </div>
+        <div class="bg-slate-900 p-6 rounded border border-slate-800">
+            <div class="text-slate-400 text-xs uppercase">China Energy</div>
+            <div id="chn-val" class="text-3xl font-bold mt-2">---</div>
+        </div>
+        <div class="bg-slate-900 p-6 rounded border border-slate-800">
+            <div class="text-slate-400 text-xs uppercase">India Energy</div>
+            <div id="ind-val" class="text-3xl font-bold mt-2">---</div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-black p-4 rounded border border-slate-800 font-mono text-xs text-green-400 h-40 overflow-y-auto" id="console-log">
+        > Initializing V5 Dashboard...<br>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-slate-900 p-4 rounded border border-slate-800 mt-4 h-64">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        function log(msg) {
+            const box = document.getElementById('console-log');
+            box.innerHTML += `> ${msg}<br>`;
+        }
+
+        const BACKUP = {
+            "USA": { energy: 6800 },
+            "CHN": { energy: 2300 },
+            "IND": { energy: 700 }
+        };
+
+        function renderDashboard(data, source) {
+            log(`Rendering data from: ${source}`);
+            document.getElementById('usa-val').innerText = data.USA.energy.toLocaleString();
+            document.getElementById('chn-val').innerText = data.CHN.energy.toLocaleString();
+            document.getElementById('ind-val').innerText = data.IND.energy.toLocaleString();
+            
+            document.getElementById('statusBox').innerText = `System: Active (${source})`;
+            document.getElementById('statusBox').className = "text-xs font-mono text-emerald-400";
+            
+            drawChart(data);
+        }
+
+        function drawChart(data) {
+            try {
+                const ctx = document.getElementById('myChart');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['USA', 'China', 'India'],
+                        datasets: [{
+                            label: 'Energy Use (kWh)',
+                            data: [data.USA.energy, data.CHN.energy, data.IND.energy],
+                            backgroundColor: '#10b981'
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+                log("Chart drawn successfully.");
+            } catch (e) {
+                log("Chart Error: " + e.message);
+            }
+        }
+
+        async function start() {
+            log("Step 1: Loading Backup Data immediately...");
+            renderDashboard(BACKUP, "BACKUP_MODE");
+
+            log("Step 2: Attempting to fetch live file...");
+            try {
+                const response = await fetch('global_stats.json?t=' + Date.now());
+                if (response.ok) {
+                    const json = await response.json();
+                    log("Step 3: Live file found! Updating screen...");
+                    renderDashboard(json.data, "LIVE_FEED");
+                } else {
+                    log("Step 3: Live file missing (Using Backup).");
+                }
+            } catch (err) {
+                log("Network Error: " + err.message);
+            }
+        }
+
+        start();
+    </script>
+</body>
+</html>
