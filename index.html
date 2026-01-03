@@ -3,152 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConsumptionPulse | Global Observatory</title>
+    <title>ConsumptionPulse | Diagnostic Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-950 text-white antialiased">
+<body class="bg-slate-950 text-white font-mono p-4">
 
-    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                <h1 class="text-xl font-bold text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
-            </div>
-            <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                LAST UPDATE: <span id="lastUpdate" class="text-emerald-400">Connecting...</span>
-            </div>
+    <div class="max-w-4xl mx-auto mb-8 border-b border-slate-800 pb-4">
+        <h1 class="text-2xl font-bold text-emerald-400">System Diagnostic</h1>
+        <p class="text-slate-400">Troubleshooting connection to global_stats.json</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-slate-900 border border-slate-700 rounded-xl p-4 h-96 mb-8 relative">
+        <canvas id="mainChart"></canvas>
+        <div id="chartMessage" class="absolute inset-0 flex items-center justify-center text-slate-500 pointer-events-none">
+            Waiting for data...
         </div>
-    </nav>
+    </div>
 
-    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-sm font-medium uppercase">Data Source</p>
-                <div class="mt-2 text-2xl font-bold text-white">World Bank API</div>
-                <div class="mt-2 text-xs text-emerald-400">● Live Connection</div>
-            </div>
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-sm font-medium uppercase">Global Status</p>
-                <div class="mt-2 text-2xl font-bold text-white">Monitoring</div>
-                <div class="mt-2 text-xs text-blue-400">● 6 Key Economies</div>
-            </div>
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-sm font-medium uppercase">System Mode</p>
-                <div class="mt-2 text-2xl font-bold text-white">Autonomous</div>
-                <div class="mt-2 text-xs text-amber-400">Auto-refresh daily</div>
-            </div>
+    <div class="max-w-4xl mx-auto">
+        <h3 class="text-slate-400 mb-2 uppercase text-xs tracking-wider">System Log</h3>
+        <div id="debugLog" class="bg-black border border-slate-800 rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto shadow-2xl">
+            > System started.<br>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-            <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Compare Nations</h2>
-                    <p class="text-sm text-slate-400">Real kg of oil equivalent per capita.</p>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-medium text-slate-500 uppercase">Baseline</label>
-                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
-                            <option value="USA">United States</option>
-                            <option value="EUU">European Union</option>
-                            <option value="CHN">China</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-medium text-slate-500 uppercase">Target</label>
-                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
-                            <option value="IND">India</option>
-                            <option value="BRA">Brazil</option>
-                            <option value="NGA">Nigeria</option>
-                        </select>
-                    </div>
-                    <button onclick="updateChart()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all">
-                        Compare Live Data
-                    </button>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 relative">
-                <div class="h-full flex items-center justify-center">
-                    <canvas id="mainChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script>
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        let myChart;
-        let realData = {};
+        // Helper: Write to the black box
+        function log(msg, type = 'info') {
+            const box = document.getElementById('debugLog');
+            const color = type === 'error' ? 'text-red-500' : (type === 'success' ? 'text-emerald-400' : 'text-slate-300');
+            const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : '>');
+            box.innerHTML += `<div class="${color} mb-1"><span class="opacity-50">${new Date().toLocaleTimeString()}</span> ${icon} ${msg}</div>`;
+        }
 
-        async function loadData() {
+        async function runDiagnostics() {
+            // Step 1: Check Chart.js
+            if (typeof Chart === 'undefined') {
+                log('CRITICAL: Chart.js library failed to load.', 'error');
+                return;
+            }
+            log('Library: Chart.js loaded successfully.', 'success');
+
+            // Step 2: Fetch Data
+            log('Attempting to fetch global_stats.json...');
+            
             try {
-                // TRICK: We add a random number (?t=...) to the URL.
-                // This forces the browser to ignore the cache and get the NEW file.
-                const response = await fetch('global_stats.json?t=' + new Date().getTime());
+                // Add timestamp to bypass cache
+                const response = await fetch('global_stats.json?t=' + Date.now());
                 
                 if (!response.ok) {
-                    throw new Error("File missing");
+                    log(`HTTP Error: ${response.status} ${response.statusText}`, 'error');
+                    log('Is the file named correctly? Is it in the root folder?', 'error');
+                    throw new Error("HTTP Fetch failed");
                 }
-
+                
+                log('File found. Downloading content...', 'success');
+                
+                // Step 3: Parse JSON
                 const json = await response.json();
-                realData = json.data;
-                document.getElementById('lastUpdate').innerText = json.last_updated;
-                initChart();
+                log('JSON parsed successfully.', 'success');
+                log('Last Update Timestamp: ' + (json.last_updated || 'Unknown'));
+                
+                // Step 4: Draw Chart
+                const ctx = document.getElementById('mainChart').getContext('2d');
+                
+                // Remove "Waiting" text
+                document.getElementById('chartMessage').style.display = 'none';
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['USA', 'China', 'India', 'Brazil', 'Nigeria'],
+                        datasets: [{
+                            label: 'Energy Consumption',
+                            data: [
+                                json.data.USA?.energy || 0,
+                                json.data.CHN?.energy || 0,
+                                json.data.IND?.energy || 0,
+                                json.data.BRA?.energy || 0,
+                                json.data.NGA?.energy || 0
+                            ],
+                            backgroundColor: '#10b981'
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+                
+                log('Chart rendered successfully. System operational.', 'success');
+
             } catch (error) {
-                console.error(error);
-                document.getElementById('lastUpdate').innerText = "Retry in 5s...";
-                // If it fails, try again automatically in 3 seconds
-                setTimeout(loadData, 3000);
+                log('ERROR: ' + error.message, 'error');
+                
+                // Emergency Backup Chart
+                log('Attempting to render backup chart...', 'info');
+                const ctx = document.getElementById('mainChart').getContext('2d');
+                document.getElementById('chartMessage').style.display = 'none';
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['BACKUP DATA', 'CHECK FILE'],
+                        datasets: [{ label: 'Error Mode', data: [100, 50], backgroundColor: '#ef4444' }]
+                    }
+                });
             }
         }
 
-        function initChart() {
-            const baseVal = realData['USA'] ? realData['USA'].energy : 0;
-            const targetVal = realData['IND'] ? realData['IND'].energy : 0;
-
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['United States', 'India'],
-                    datasets: [{
-                        label: 'Energy Use (kg/capita)',
-                        data: [baseVal, targetVal],
-                        backgroundColor: ['#3b82f6', '#10b981'],
-                        borderRadius: 6,
-                        barThickness: 60
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' }, beginAtZero: true },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-        }
-
-        function updateChart() {
-            const baseCode = document.getElementById('baselineSelect').value;
-            const targetCode = document.getElementById('targetSelect').value;
-            const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
-            const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
-
-            const baseVal = realData[baseCode] ? realData[baseCode].energy : 0;
-            const targetVal = realData[targetCode] ? realData[targetCode].energy : 0;
-
-            myChart.data.labels = [baseName, targetName];
-            myChart.data.datasets[0].data = [baseVal, targetVal];
-            myChart.update();
-        }
-
-        loadData();
+        // Run
+        runDiagnostics();
     </script>
 </body>
 </html>
