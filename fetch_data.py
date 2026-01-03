@@ -1,79 +1,51 @@
 import json
 import urllib.request
-import datetime
+from datetime import datetime
 
-# CONFIGURATION: The 3 metrics we want to track
-INDICATORS = {
-    "energy": "EG.USE.PCAP.KG.OE",  # Energy use (kg oil equivalent per capita)
-    "co2": "EN.ATM.CO2E.PC",        # CO2 emissions (metric tons per capita)
-    "gdp": "NY.GDP.PCAP.CD"         # GDP per capita (current US$)
-}
+# 1. Who are we tracking?
+countries = ['USA', 'CHN', 'IND', 'BRA', 'NGA', 'EUU']
+indicator = "EG.USE.PCAP.KG.OE"
 
-def fetch_world_bank_data(indicator_code):
-    """Fetches 100 records for a specific indicator."""
-    url = f"http://api.worldbank.org/v2/country/all/indicator/{indicator_code}?format=json&per_page=100&date=2020"
-    print(f"   ...fetching {indicator_code} from World Bank...")
+print("🤖 ROBOT: Starting Mission...")
+data_storage = {}
+
+for country in countries:
+    url = f"http://api.worldbank.org/v2/country/{country}/indicator/{indicator}?format=json&per_page=1&date=2020:2024"
     try:
+        print(f"   ...Contacting World Bank for {country}...")
         with urllib.request.urlopen(url) as response:
-            data = json.loads(response.read().decode())
-        return data[1] # Return the actual list of country data
+            raw_data = json.loads(response.read().decode())
+            
+            # Extract data
+            if len(raw_data) > 1 and raw_data[1]:
+                latest_entry = raw_data[1][0]
+                val = latest_entry['value']
+                year = latest_entry['date']
+                
+                # Check for empty values
+                final_val = round(val) if val else 0
+                
+                data_storage[country] = {
+                    "energy": final_val,
+                    "year": year
+                }
+                print(f"   ✅ Got {country}: {final_val}")
+            else:
+                data_storage[country] = {"energy": 0, "year": "N/A"}
+                
     except Exception as e:
-        print(f"Error fetching {indicator_code}: {e}")
-        return []
+        print(f"   ❌ Error {country}: {e}")
+        data_storage[country] = {"energy": 0, "year": "Error"}
 
-print("🤖 Waking up... Preparing to fetch Multi-Metric Data.")
-
-# 1. Fetch all datasets
-raw_data = {}
-for name, code in INDICATORS.items():
-    raw_data[name] = fetch_world_bank_data(code)
-
-# 2. Merge data by Country
-# We use a dictionary keyed by "Country Code" (like USA, IND, CHN) to merge them
-merged_countries = {}
-
-# Process Energy first to build the base list
-for record in raw_data['energy']:
-    if record['value'] is not None:
-        country_code = record['countryiso3code']
-        merged_countries[country_code] = {
-            "country": record['country']['value'],
-            "code": country_code,
-            "energy": round(record['value'], 1),
-            "co2": None, # Placeholders
-            "gdp": None
-        }
-
-# Helper function to add other metrics
-def add_metric(metric_name):
-    for record in raw_data[metric_name]:
-        if record['value'] is not None and record['countryiso3code'] in merged_countries:
-            merged_countries[record['countryiso3code']][metric_name] = round(record['value'], 1)
-
-# Add CO2 and GDP to the existing countries
-add_metric('co2')
-add_metric('gdp')
-
-# 3. Clean and Format
-# Convert dictionary back to a list and remove incomplete records
-final_list = []
-for code, data in merged_countries.items():
-    # Only keep countries that have ALL three data points (for good comparisons)
-    if data['energy'] and data['co2'] and data['gdp']:
-        final_list.append(data)
-
-# Sort by Energy use (High to Low)
-final_list.sort(key=lambda x: x['energy'], reverse=True)
-
-# 4. Save
-output = {
-    "last_updated": str(datetime.datetime.now()),
-    "source": "World Bank Open Data",
-    "metrics": ["Energy (kg oil)", "CO2 (tons)", "GDP ($)"],
-    "records": final_list
+# 2. Package the data properly
+final_packet = {
+    "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "data": data_storage
 }
 
+# 3. Save to the file your website expects
 with open('global_data.json', 'w') as f:
-    json.dump(output, f, indent=2)
+    json.dump(final_packet, f, indent=2)
 
-print(f"✅ Success! Merged data for {len(final_list)} countries.")
+print("🎉 MISSION COMPLETE: global_data.json saved.")
+print(json.dumps(final_packet, indent=2))
