@@ -14,50 +14,71 @@
             Global Consumption Observatory
         </h1>
         <p class="text-xl text-slate-300 mb-8">
-            Tracking the world's resources in real-time. Automated. Open. Free.
+            Live Energy Consumption Data (Kg of Oil Equivalent per Capita)
         </p>
         <div class="inline-block bg-slate-800 px-4 py-2 rounded-full border border-slate-700 text-sm text-slate-400">
-            Current Status: <span class="text-emerald-400 font-bold">System Live</span>
+            Data Source: <span class="text-emerald-400 font-bold">The World Bank</span>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
-        <h2 class="text-2xl font-semibold mb-4 text-emerald-400">Global Energy Snapshot (Demo)</h2>
-        <canvas id="demoChart"></canvas>
+    <div class="max-w-5xl mx-auto bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-emerald-400">Top 20 Energy Consumers</h2>
+            <span id="lastUpdated" class="text-xs text-slate-500">Loading time...</span>
+        </div>
+        <canvas id="realDataChart" height="400"></canvas>
     </div>
 
     <footer class="text-center text-slate-500 mt-16 pb-8 text-sm">
-        Powered by Zero-Cost Automation
+        Automated by GitHub Actions & Vercel
     </footer>
 
     <script>
-        const ctx = document.getElementById('demoChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['USA', 'China', 'India', 'Europe', 'Rest of World'],
-                datasets: [{
-                    label: 'Energy Consumption (TWh)',
-                    data: [25000, 35000, 9000, 18000, 15000],
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.7)', // Blue
-                        'rgba(16, 185, 129, 0.7)', // Emerald
-                        'rgba(245, 158, 11, 0.7)', // Amber
-                        'rgba(139, 92, 246, 0.7)', // Purple
-                        'rgba(100, 116, 139, 0.7)' // Grey
-                    ],
-                    borderColor: 'transparent',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                    x: { grid: { color: 'transparent' }, ticks: { color: '#94a3b8' } }
-                },
-                plugins: { legend: { labels: { color: 'white' } } }
+        async function loadRealData() {
+            try {
+                // 1. FETCH: Go grab the file the robot created
+                const response = await fetch('global_data.json');
+                const data = await response.json();
+
+                // 2. PREPARE: Take the top 20 countries
+                const top20 = data.records.slice(0, 20);
+                const labels = top20.map(item => item.country);
+                const values = top20.map(item => item.energy_use);
+
+                // Update timestamp
+                document.getElementById('lastUpdated').innerText = "Last Updated: " + data.last_updated;
+
+                // 3. DRAW: Create the chart with real numbers
+                const ctx = document.getElementById('realDataChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Energy Use (kg oil equiv/capita)',
+                            data: values,
+                            backgroundColor: 'rgba(52, 211, 153, 0.6)', // Emerald color
+                            borderColor: 'rgba(52, 211, 153, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', autoSkip: false, maxRotation: 90, minRotation: 45 } }
+                        },
+                        plugins: { legend: { labels: { color: 'white' } } }
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading data:", error);
             }
-        });
+        }
+
+        // Run the function immediately
+        loadRealData();
     </script>
 </body>
 </html>
