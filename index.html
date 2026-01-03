@@ -7,127 +7,113 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-950 text-white antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-slate-950 text-white antialiased">
 
     <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
+                <h1 class="text-xl font-bold text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
             </div>
             <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                SYSTEM STATUS: <span class="text-emerald-400">ONLINE</span>
+                LAST UPDATE: <span id="lastUpdate" class="text-emerald-400">Loading...</span>
             </div>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Global Energy Load</p>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span class="text-3xl font-bold text-white">165,000</span>
-                    <span class="text-sm text-slate-500">TWh</span>
-                </div>
-                <div class="mt-2 text-xs text-emerald-400 font-mono">▲ 2.4% vs last year</div>
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
+                <p class="text-slate-400 text-sm font-medium uppercase">Data Source</p>
+                <div class="mt-2 text-2xl font-bold text-white">World Bank API</div>
+                <div class="mt-2 text-xs text-emerald-400">● Live Connection</div>
             </div>
-            
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Active Monitoring</p>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span class="text-3xl font-bold text-white">195</span>
-                    <span class="text-sm text-slate-500">Nations</span>
-                </div>
-                <div class="mt-2 text-xs text-blue-400 font-mono">● Real-time Coverage</div>
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
+                <p class="text-slate-400 text-sm font-medium uppercase">Global Status</p>
+                <div class="mt-2 text-2xl font-bold text-white">Monitoring</div>
+                <div class="mt-2 text-xs text-blue-400">● 6 Key Economies</div>
             </div>
-
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Carbon Intensity</p>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span class="text-3xl font-bold text-white">421</span>
-                    <span class="text-sm text-slate-500">PPM</span>
-                </div>
-                <div class="mt-2 text-xs text-amber-400 font-mono">⚠ Critical Level</div>
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl">
+                <p class="text-slate-400 text-sm font-medium uppercase">System Mode</p>
+                <div class="mt-2 text-2xl font-bold text-white">Autonomous</div>
+                <div class="mt-2 text-xs text-amber-400">Auto-refresh daily</div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-            
             <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold text-white mb-1">Comparative Analysis</h2>
-                    <p class="text-sm text-slate-400">Select regions to compare consumption efficiency.</p>
+                    <h2 class="text-lg font-semibold text-white">Compare Nations</h2>
+                    <p class="text-sm text-slate-400">Real kg of oil equivalent per capita.</p>
                 </div>
-
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-2 uppercase">Baseline Region</label>
-                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                        <label class="text-xs font-medium text-slate-500 uppercase">Baseline</label>
+                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
                             <option value="USA">United States</option>
-                            <option value="EU">European Union</option>
-                            <option value="CN">China</option>
+                            <option value="EUU">European Union</option>
+                            <option value="CHN">China</option>
                         </select>
                     </div>
-                    
-                    <div class="flex justify-center text-slate-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-                    </div>
-
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-2 uppercase">Target Region</label>
-                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                            <option value="IN">India</option>
-                            <option value="BR">Brazil</option>
-                            <option value="NG">Nigeria</option>
+                        <label class="text-xs font-medium text-slate-500 uppercase">Target</label>
+                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
+                            <option value="IND">India</option>
+                            <option value="BRA">Brazil</option>
+                            <option value="NGA">Nigeria</option>
                         </select>
                     </div>
-
-                    <button onclick="updateChart()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
-                        Run Comparison
+                    <button onclick="updateChart()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all">
+                        Compare Live Data
                     </button>
                 </div>
             </div>
 
             <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 relative">
-                <div class="absolute top-6 right-6 flex gap-2">
-                    <span class="px-2 py-1 bg-slate-800 rounded text-xs text-slate-400 border border-slate-700">Metric: Energy per Capita</span>
-                </div>
                 <div class="h-full flex items-center justify-center">
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
         </div>
-        
     </main>
 
     <script>
-        // 1. Setup the Chart
         const ctx = document.getElementById('mainChart').getContext('2d');
         let myChart;
+        let realData = {};
 
-        // Data Storage (This replaces the external database for now)
-        const countryData = {
-            'USA': { energy: 12000, color: '#3b82f6' }, // Blue
-            'EU':  { energy: 6500,  color: '#8b5cf6' }, // Purple
-            'CN':  { energy: 5000,  color: '#f59e0b' }, // Amber
-            'IN':  { energy: 1200,  color: '#10b981' }, // Emerald
-            'BR':  { energy: 2800,  color: '#ec4899' }, // Pink
-            'NG':  { energy: 800,   color: '#6366f1' }  // Indigo
-        };
+        // 1. Fetch the data your Robot saved
+        async function loadData() {
+            try {
+                const response = await fetch('global_stats.json');
+                const json = await response.json();
+                
+                realData = json.data;
+                document.getElementById('lastUpdate').innerText = json.last_updated;
+                
+                // Initialize with default view
+                initChart();
+            } catch (error) {
+                console.error("Error loading robot data:", error);
+                alert("System initializing... data not found yet. Please wait for the robot.");
+            }
+        }
 
+        // 2. Draw the Chart
         function initChart() {
+            // Default to USA vs India
+            const baseVal = realData['USA'] ? realData['USA'].energy : 0;
+            const targetVal = realData['IND'] ? realData['IND'].energy : 0;
+
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['United States', 'India'],
                     datasets: [{
-                        label: 'kWh per Person (Yearly)',
-                        data: [12000, 1200],
+                        label: 'Energy Use (kg of oil equiv. per capita)',
+                        data: [baseVal, targetVal],
                         backgroundColor: ['#3b82f6', '#10b981'],
                         borderRadius: 6,
                         barThickness: 60
@@ -136,50 +122,33 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { 
-                            backgroundColor: '#1e293b',
-                            titleColor: '#fff',
-                            bodyColor: '#94a3b8',
-                            borderColor: '#334155',
-                            borderWidth: 1,
-                            padding: 12
-                        }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: {
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#64748b' },
-                            border: { display: false }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8', font: { weight: 'bold' } },
-                            border: { display: false }
-                        }
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' }, beginAtZero: true },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
                     }
                 }
             });
         }
 
-        // 2. Logic to Update Chart when buttons are clicked
+        // 3. Update on Button Click
         function updateChart() {
-            const base = document.getElementById('baselineSelect').value;
-            const target = document.getElementById('targetSelect').value;
+            const baseCode = document.getElementById('baselineSelect').value;
+            const targetCode = document.getElementById('targetSelect').value;
             
             const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
             const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
 
-            // Update Chart Data
+            const baseVal = realData[baseCode] ? realData[baseCode].energy : 0;
+            const targetVal = realData[targetCode] ? realData[targetCode].energy : 0;
+
             myChart.data.labels = [baseName, targetName];
-            myChart.data.datasets[0].data = [countryData[base].energy, countryData[target].energy];
-            myChart.data.datasets[0].backgroundColor = [countryData[base].color, countryData[target].color];
+            myChart.data.datasets[0].data = [baseVal, targetVal];
             myChart.update();
         }
 
-        // Start the engine
-        initChart();
+        // Start everything
+        loadData();
     </script>
 </body>
 </html>
