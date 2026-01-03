@@ -18,7 +18,7 @@
                 <h1 class="text-xl font-bold text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
             </div>
             <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                LAST UPDATE: <span id="lastUpdate" class="text-emerald-400">Loading...</span>
+                SYSTEM STATUS: <span class="text-emerald-400">SYSTEM ACTIVE</span>
             </div>
         </div>
     </nav>
@@ -87,17 +87,25 @@
         // 1. Fetch the data your Robot saved
         async function loadData() {
             try {
-                const response = await fetch('global_stats.json');
+                // Add a timestamp to the URL to prevent caching (forces browser to get fresh file)
+                const response = await fetch('global_stats.json?t=' + new Date().getTime());
+                if (!response.ok) {
+                    throw new Error("File not found");
+                }
                 const json = await response.json();
                 
                 realData = json.data;
-                document.getElementById('lastUpdate').innerText = json.last_updated;
+                // Check if last_updated exists
+                if (json.last_updated) {
+                     document.querySelector('.text-xs.font-mono .text-emerald-400').innerText = "DATA LOADED";
+                }
                 
                 // Initialize with default view
                 initChart();
             } catch (error) {
                 console.error("Error loading robot data:", error);
-                alert("System initializing... data not found yet. Please wait for the robot.");
+                // Keep the error message hidden in console, but chart won't load
+                alert("Still initializing... Please wait 1 minute and refresh.");
             }
         }
 
