@@ -1,0 +1,182 @@
+{
+  "last_updated": "2026-01-03 18:36:22.289957",
+  "source": "World Bank Open Data",
+  "records": [
+    {
+      "country": "North America",
+      "energy_use": 6280.8
+    },
+    {
+      "country": "High income",
+      "energy_use": 4374.0
+    },
+    {
+      "country": "Post-demographic dividend",
+      "energy_use": 4159.2
+    },
+    {
+      "country": "OECD members",
+      "energy_use": 3662.9
+    },
+    {
+      "country": "Euro area",
+      "energy_use": 2978.6
+    },
+    {
+      "country": "Europe & Central Asia",
+      "energy_use": 2944.0
+    },
+    {
+      "country": "European Union",
+      "energy_use": 2934.0
+    },
+    {
+      "country": "Europe & Central Asia (IDA & IBRD countries)",
+      "energy_use": 2927.5
+    },
+    {
+      "country": "Central Europe and the Baltics",
+      "energy_use": 2621.6
+    },
+    {
+      "country": "Late-demographic dividend",
+      "energy_use": 2378.8
+    },
+    {
+      "country": "East Asia & Pacific",
+      "energy_use": 2177.5
+    },
+    {
+      "country": "Upper middle income",
+      "energy_use": 1996.3
+    },
+    {
+      "country": "East Asia & Pacific (IDA & IBRD countries)",
+      "energy_use": 1987.2
+    },
+    {
+      "country": "East Asia & Pacific (excluding high income)",
+      "energy_use": 1971.6
+    },
+    {
+      "country": "Europe & Central Asia (excluding high income)",
+      "energy_use": 1840.3
+    },
+    {
+      "country": "World",
+      "energy_use": 1761.5
+    },
+    {
+      "country": "Arab World",
+      "energy_use": 1677.4
+    },
+    {
+      "country": "IBRD only",
+      "energy_use": 1584.6
+    },
+    {
+      "country": "Middle East, North Africa, Afghanistan & Pakistan",
+      "energy_use": 1560.0
+    },
+    {
+      "country": "IDA & IBRD total",
+      "energy_use": 1290.5
+    },
+    {
+      "country": "Middle income",
+      "energy_use": 1265.0
+    },
+    {
+      "country": "Latin America & the Caribbean (IDA & IBRD countries)",
+      "energy_use": 1223.9
+    },
+    {
+      "country": "Latin America & Caribbean",
+      "energy_use": 1218.3
+    },
+    {
+      "country": "Low & middle income",
+      "energy_use": 1201.2
+    },
+    {
+      "country": "Latin America & Caribbean (excluding high income)",
+      "energy_use": 1178.5
+    },
+    {
+      "country": "Middle East, North Africa, Afghanistan & Pakistan (excluding high income)",
+      "energy_use": 1021.2
+    },
+    {
+      "country": "Middle East, North Africa, Afghanistan & Pakistan (IDA & IBRD)",
+      "energy_use": 1021.2
+    },
+    {
+      "country": "Early-demographic dividend",
+      "energy_use": 862.4
+    },
+    {
+      "country": "South Asia",
+      "energy_use": 591.7
+    },
+    {
+      "country": "South Asia (IDA & IBRD)",
+      "energy_use": 591.7
+    },
+    {
+      "country": "Lower middle income",
+      "energy_use": 570.6
+    },
+    {
+      "country": "Africa Eastern and Southern",
+      "energy_use": 567.0
+    },
+    {
+      "country": "Fragile and conflict affected situations",
+      "energy_use": 499.2
+    },
+    {
+      "country": "Sub-Saharan Africa (excluding high income)",
+      "energy_use": 489.2
+    },
+    {
+      "country": "Sub-Saharan Africa",
+      "energy_use": 477.0
+    },
+    {
+      "country": "Sub-Saharan Africa (IDA & IBRD countries)",
+      "energy_use": 477.0
+    },
+    {
+      "country": "IDA blend",
+      "energy_use": 459.4
+    },
+    {
+      "country": "Pre-demographic dividend",
+      "energy_use": 411.3
+    },
+    {
+      "country": "IDA total",
+      "energy_use": 402.0
+    },
+    {
+      "country": "Heavily indebted poor countries (HIPC)",
+      "energy_use": 388.2
+    },
+    {
+      "country": "IDA only",
+      "energy_use": 366.8
+    },
+    {
+      "country": "Least developed countries: UN classification",
+      "energy_use": 356.3
+    },
+    {
+      "country": "Low income",
+      "energy_use": 352.4
+    },
+    {
+      "country": "Africa Western and Central",
+      "energy_use": 336.6
+    }
+  ]
+}
