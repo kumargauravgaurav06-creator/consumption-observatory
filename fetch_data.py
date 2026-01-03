@@ -2,48 +2,78 @@ import json
 import urllib.request
 import datetime
 
-# 1. SETUP: Define the World Bank API URL
-# Indicator: Energy use (kg of oil equivalent per capita) - EG.USE.PCAP.KG.OE
-# We fetch 50 records from the most recent reporting year available via API
-api_url = "http://api.worldbank.org/v2/country/all/indicator/EG.USE.PCAP.KG.OE?format=json&per_page=50&date=2020"
+# CONFIGURATION: The 3 metrics we want to track
+INDICATORS = {
+    "energy": "EG.USE.PCAP.KG.OE",  # Energy use (kg oil equivalent per capita)
+    "co2": "EN.ATM.CO2E.PC",        # CO2 emissions (metric tons per capita)
+    "gdp": "NY.GDP.PCAP.CD"         # GDP per capita (current US$)
+}
 
-print("🤖 Waking up...")
-print(f"📡 Connecting to World Bank API: {api_url}")
+def fetch_world_bank_data(indicator_code):
+    """Fetches 100 records for a specific indicator."""
+    url = f"http://api.worldbank.org/v2/country/all/indicator/{indicator_code}?format=json&per_page=100&date=2020"
+    print(f"   ...fetching {indicator_code} from World Bank...")
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+        return data[1] # Return the actual list of country data
+    except Exception as e:
+        print(f"Error fetching {indicator_code}: {e}")
+        return []
 
-try:
-    # 2. FETCH: Go to the URL and grab the data
-    with urllib.request.urlopen(api_url) as response:
-        data = json.loads(response.read().decode())
-        
-    # The World Bank API returns a list: [metadata, actual_data]
-    # We only want the actual_data, which is at index 1
-    raw_records = data[1]
-    
-    # 3. CLEAN: Process the messy data into simple JSON
-    clean_data = []
-    for record in raw_records:
-        # Only keep records that have a real number value
-        if record['value'] is not None:
-            clean_data.append({
-                "country": record['country']['value'],
-                "energy_use": round(record['value'], 1)
-            })
-            
-    # Sort the data: Highest energy users first
-    clean_data.sort(key=lambda x: x['energy_use'], reverse=True)
-    
-    # Add a timestamp so we know when this last ran
-    final_output = {
-        "last_updated": str(datetime.datetime.now()),
-        "source": "World Bank Open Data",
-        "records": clean_data
-    }
-    
-    # 4. SAVE: Write the result to a file called 'global_data.json'
-    with open('global_data.json', 'w') as f:
-        json.dump(final_output, f, indent=2)
-        
-    print(f"✅ Success! Saved {len(clean_data)} country records to global_data.json")
+print("🤖 Waking up... Preparing to fetch Multi-Metric Data.")
 
-except Exception as e:
-    print(f"❌ Error occurred: {e}")
+# 1. Fetch all datasets
+raw_data = {}
+for name, code in INDICATORS.items():
+    raw_data[name] = fetch_world_bank_data(code)
+
+# 2. Merge data by Country
+# We use a dictionary keyed by "Country Code" (like USA, IND, CHN) to merge them
+merged_countries = {}
+
+# Process Energy first to build the base list
+for record in raw_data['energy']:
+    if record['value'] is not None:
+        country_code = record['countryiso3code']
+        merged_countries[country_code] = {
+            "country": record['country']['value'],
+            "code": country_code,
+            "energy": round(record['value'], 1),
+            "co2": None, # Placeholders
+            "gdp": None
+        }
+
+# Helper function to add other metrics
+def add_metric(metric_name):
+    for record in raw_data[metric_name]:
+        if record['value'] is not None and record['countryiso3code'] in merged_countries:
+            merged_countries[record['countryiso3code']][metric_name] = round(record['value'], 1)
+
+# Add CO2 and GDP to the existing countries
+add_metric('co2')
+add_metric('gdp')
+
+# 3. Clean and Format
+# Convert dictionary back to a list and remove incomplete records
+final_list = []
+for code, data in merged_countries.items():
+    # Only keep countries that have ALL three data points (for good comparisons)
+    if data['energy'] and data['co2'] and data['gdp']:
+        final_list.append(data)
+
+# Sort by Energy use (High to Low)
+final_list.sort(key=lambda x: x['energy'], reverse=True)
+
+# 4. Save
+output = {
+    "last_updated": str(datetime.datetime.now()),
+    "source": "World Bank Open Data",
+    "metrics": ["Energy (kg oil)", "CO2 (tons)", "GDP ($)"],
+    "records": final_list
+}
+
+with open('global_data.json', 'w') as f:
+    json.dump(output, f, indent=2)
+
+print(f"✅ Success! Merged data for {len(final_list)} countries.")
