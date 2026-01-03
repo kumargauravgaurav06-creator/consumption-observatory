@@ -1,0 +1,11 @@
+{
+  "last_updated": "System Initialized",
+  "data": {
+    "USA": { "energy": 6800, "year": "2023" },
+    "CHN": { "energy": 2300, "year": "2023" },
+    "IND": { "energy": 700, "year": "2023" },
+    "BRA": { "energy": 1400, "year": "2023" },
+    "NGA": { "energy": 600, "year": "2023" },
+    "EUU": { "energy": 3200, "year": "2023" }
+  }
+}
