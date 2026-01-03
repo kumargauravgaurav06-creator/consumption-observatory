@@ -6,79 +6,216 @@
     <title>Global Consumption Observatory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white font-sans antialiased">
-    
-    <div class="max-w-6xl mx-auto px-4 py-16 text-center">
-        <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-            Global Consumption Observatory
-        </h1>
-        <p class="text-xl text-slate-300 mb-8">
-            Live Energy Consumption Data (Kg of Oil Equivalent per Capita)
-        </p>
-        <div class="inline-block bg-slate-800 px-4 py-2 rounded-full border border-slate-700 text-sm text-slate-400">
-            Data Source: <span class="text-emerald-400 font-bold">The World Bank</span>
-        </div>
-    </div>
+<body class="bg-[#0f172a] text-slate-300 antialiased min-h-screen">
 
-    <div class="max-w-5xl mx-auto bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-emerald-400">Top 20 Energy Consumers</h2>
-            <span id="lastUpdated" class="text-xs text-slate-500">Loading time...</span>
+    <nav class="border-b border-slate-800 bg-[#0f172a]/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-emerald-400 text-2xl mr-2">🌍</span>
+                    <span class="font-bold text-white text-lg tracking-tight">Consumption<span class="text-emerald-400">Pulse</span></span>
+                </div>
+                <div class="text-xs font-mono bg-slate-800 px-3 py-1 rounded text-slate-400">
+                    <span class="w-2 h-2 inline-block bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+                    SYSTEM ONLINE
+                </div>
+            </div>
         </div>
-        <canvas id="realDataChart" height="400"></canvas>
-    </div>
+    </nav>
 
-    <footer class="text-center text-slate-500 mt-16 pb-8 text-sm">
-        Automated by GitHub Actions & Vercel
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Global Energy Tracker</h1>
+            <p class="text-slate-400 max-w-2xl mx-auto">
+                Real-time analysis of energy consumption (kg of oil equivalent per capita).
+                Automated daily via World Bank Open Data API.
+            </p>
+            <p id="lastUpdated" class="mt-4 text-xs text-slate-600 uppercase tracking-widest">Loading timestamp...</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+            <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur">
+                <h3 class="text-emerald-400 font-semibold mb-4 text-sm uppercase tracking-wider">Compare Nations</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Country A</label>
+                        <select id="countryA" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-center text-slate-500 text-xl font-bold">VS</div>
+                    
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Country B</label>
+                        <select id="countryB" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+
+                    <button onclick="updateComparison()" class="w-full mt-4 text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-800 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">
+                        Analyze Difference
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div id="comparisonResult" class="relative z-10">
+                    <p class="text-slate-500 italic">Select two countries and click Analyze to see the comparison.</p>
+                </div>
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur shadow-xl">
+            <h3 class="text-white font-semibold mb-6">Top 20 Consumers Leaderboard</h3>
+            <div class="relative h-96 w-full">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-800 mt-20 bg-slate-900 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-600 text-sm">
+            <p>Built with Zero-Cost Architecture</p>
+            <p class="mt-2">Data Source: World Bank API • Hosted on Vercel • Powered by GitHub Actions</p>
+        </div>
     </footer>
 
     <script>
-        async function loadRealData() {
+        let globalData = [];
+
+        async function initDashboard() {
             try {
-                // 1. FETCH: Go grab the file the robot created
+                // 1. Fetch Data
                 const response = await fetch('global_data.json');
-                const data = await response.json();
+                const json = await response.json();
+                
+                // Update Timestamp
+                document.getElementById('lastUpdated').innerText = "LAST UPDATED: " + new Date(json.last_updated).toLocaleString();
+                
+                globalData = json.records;
 
-                // 2. PREPARE: Take the top 20 countries
-                const top20 = data.records.slice(0, 20);
-                const labels = top20.map(item => item.country);
-                const values = top20.map(item => item.energy_use);
+                // 2. Populate Dropdowns
+                const selectA = document.getElementById('countryA');
+                const selectB = document.getElementById('countryB');
+                selectA.innerHTML = ''; selectB.innerHTML = '';
 
-                // Update timestamp
-                document.getElementById('lastUpdated').innerText = "Last Updated: " + data.last_updated;
+                // Sort alphabetically for the dropdowns
+                const alphaSorted = [...globalData].sort((a, b) => a.country.localeCompare(b.country));
 
-                // 3. DRAW: Create the chart with real numbers
-                const ctx = document.getElementById('realDataChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Energy Use (kg oil equiv/capita)',
-                            data: values,
-                            backgroundColor: 'rgba(52, 211, 153, 0.6)', // Emerald color
-                            borderColor: 'rgba(52, 211, 153, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                            x: { grid: { display: false }, ticks: { color: '#94a3b8', autoSkip: false, maxRotation: 90, minRotation: 45 } }
-                        },
-                        plugins: { legend: { labels: { color: 'white' } } }
-                    }
+                alphaSorted.forEach(item => {
+                    const optionA = new Option(item.country, item.energy_use);
+                    const optionB = new Option(item.country, item.energy_use);
+                    selectA.add(optionA);
+                    selectB.add(optionB);
                 });
+
+                // Set defaults (USA vs China as example)
+                selectA.value = globalData.find(x => x.country.includes("United States"))?.energy_use || globalData[0].energy_use;
+                selectB.value = globalData.find(x => x.country.includes("China"))?.energy_use || globalData[1].energy_use;
+
+                // 3. Draw Main Chart
+                drawMainChart(globalData.slice(0, 20)); // Top 20 only
+                
+                // Run initial comparison
+                updateComparison();
+
             } catch (error) {
-                console.error("Error loading data:", error);
+                console.error("Dashboard Error:", error);
+                document.getElementById('lastUpdated').innerText = "System Error: Could not load data.";
             }
         }
 
-        // Run the function immediately
-        loadRealData();
+        function updateComparison() {
+            const selectA = document.getElementById('countryA');
+            const selectB = document.getElementById('countryB');
+            
+            const nameA = selectA.options[selectA.selectedIndex].text;
+            const valA = parseFloat(selectA.value);
+            
+            const nameB = selectB.options[selectB.selectedIndex].text;
+            const valB = parseFloat(selectB.value);
+
+            const resultDiv = document.getElementById('comparisonResult');
+            
+            // Calculate difference
+            let diff = 0;
+            let msg = "";
+            let colorClass = "text-white";
+            
+            if(valA > valB) {
+                diff = ((valA - valB) / valB * 100).toFixed(1);
+                msg = `<span class="text-3xl md:text-5xl font-bold text-white block mb-2">${nameA}</span> 
+                       uses <span class="text-emerald-400 font-bold">${diff}% MORE</span> energy per person than ${nameB}.`;
+            } else if (valB > valA) {
+                diff = ((valB - valA) / valA * 100).toFixed(1);
+                msg = `<span class="text-3xl md:text-5xl font-bold text-white block mb-2">${nameA}</span> 
+                       uses <span class="text-emerald-400 font-bold">${diff}% LESS</span> energy per person than ${nameB}.`;
+            } else {
+                msg = "Both countries have approximately equal consumption.";
+            }
+
+            resultDiv.innerHTML = `
+                <div class="animate-fade-in-up">
+                    ${msg}
+                    <div class="mt-6 flex gap-8 justify-center items-end h-32">
+                        <div class="w-16 bg-blue-500 rounded-t-lg transition-all duration-500" style="height: ${Math.min(100, (valA/valB)*50)}%"></div>
+                        <div class="w-16 bg-emerald-500 rounded-t-lg transition-all duration-500" style="height: ${Math.min(100, (valB/valA)*50)}%"></div>
+                    </div>
+                    <div class="flex gap-8 justify-center text-xs text-slate-400 mt-2 font-mono">
+                        <div class="w-16">${valA.toLocaleString()}</div>
+                        <div class="w-16">${valB.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function drawMainChart(data) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.country),
+                    datasets: [{
+                        label: 'Energy Consumption',
+                        data: data.map(d => d.energy_use),
+                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8' } 
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', autoSkip: false, maxRotation: 45, minRotation: 45 } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Start
+        initDashboard();
     </script>
 </body>
 </html>
