@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ConsumptionPulse V7</title>
+    <title>ConsumptionPulse V8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,9 +11,9 @@
     <div class="border-b border-slate-800 pb-4 mb-6 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-emerald-400">
             ConsumptionPulse 
-            <span class="bg-purple-600 text-white text-sm px-2 py-1 rounded ml-2">V7.0 Stable</span>
+            <span class="bg-emerald-600 text-white text-sm px-2 py-1 rounded ml-2">V8.0 Final</span>
         </h1>
-        <div id="status" class="text-yellow-400 font-mono text-sm">System: Connecting...</div>
+        <div id="status" class="text-yellow-400 font-mono text-sm">System: Scanning...</div>
     </div>
 
     <div class="grid grid-cols-3 gap-4 mb-6">
@@ -36,7 +36,7 @@
     </div>
 
     <div id="logs" class="bg-black p-4 font-mono text-xs text-green-400 h-32 overflow-y-auto border border-green-900">
-        > V7 Adapter initialized.<br>
+        > V8 Master Key initialized.<br>
     </div>
 
     <script>
@@ -51,19 +51,8 @@
         function updateScreen(data, source) {
             log(`Displaying data from: ${source}`);
             
-            // Helper to safely get numbers (prevents crashes)
-            const getVal = (code) => {
-                if (data && data[code] && data[code].energy) {
-                    return data[code].energy.toLocaleString();
-                }
-                return "---";
-            };
-            const getRaw = (code) => {
-                if (data && data[code] && data[code].energy) {
-                    return data[code].energy;
-                }
-                return 0;
-            };
+            const getVal = (code) => data[code] ? data[code].energy.toLocaleString() : "---";
+            const getRaw = (code) => data[code] ? data[code].energy : 0;
 
             document.getElementById('usa').innerText = getVal('USA');
             document.getElementById('chn').innerText = getVal('CHN');
@@ -72,7 +61,6 @@
             document.getElementById('status').innerText = `System: Active (${source})`;
             document.getElementById('status').className = "text-emerald-400 font-mono text-sm";
             
-            // Draw Chart
             const ctx = document.getElementById('myChart');
             new Chart(ctx, {
                 type: 'bar',
@@ -93,10 +81,10 @@
             updateScreen(BACKUP, "BACKUP_MODE");
 
             // 2. Try to fetch the live file
-            log("Scanning for data files...");
+            log("Attempting to unlock live data...");
             
             try {
-                // Try the file the robot created
+                // Fetch the file
                 let res = await fetch('global_data.json?t=' + Date.now());
                 if (!res.ok) {
                     res = await fetch('global_stats.json?t=' + Date.now());
@@ -104,26 +92,23 @@
 
                 if (res.ok) {
                     const json = await res.json();
-                    
-                    // SMART ADAPTER LOGIC:
-                    // Check if data is inside a wrapper "data" or at the root
                     let validData = null;
                     
-                    if (json.data && json.data['USA']) {
-                        log("Structure: Nested (Standard)");
+                    // V8 INTELLIGENCE: Check all possible folders
+                    if (json.records) {
+                        log("Structure: Found 'records' folder (Correct!).");
+                        validData = json.records;
+                    } else if (json.data) {
+                        log("Structure: Found 'data' folder.");
                         validData = json.data;
-                    } else if (json['USA']) {
-                        log("Structure: Flat (Direct)");
-                        validData = json;
                     } else {
-                        log("Structure: Unknown format. Dumping keys: " + Object.keys(json));
+                        log("Structure: Flat format.");
+                        validData = json;
                     }
 
                     if (validData) {
-                        log("SUCCESS: Live data locked.");
+                        log("SUCCESS: Live data unlocked.");
                         updateScreen(validData, "LIVE_FEED");
-                    } else {
-                        log("Error: Data file found but empty.");
                     }
                 } else {
                     log("Warning: No live files found. Using Backup.");
