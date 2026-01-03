@@ -1,0 +1,10 @@
+{
+  "last_updated": "2026-01-03 19:54:38.093556",
+  "source": "World Bank Open Data",
+  "metrics": [
+    "Energy (kg oil)",
+    "CO2 (tons)",
+    "GDP ($)"
+  ],
+  "records": []
+}
