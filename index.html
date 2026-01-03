@@ -2,182 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConsumptionPulse | Global Observatory</title>
+    <title>ConsumptionPulse V6</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-950 text-white antialiased">
+<body class="bg-slate-950 text-white p-6 font-sans">
 
-    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                <h1 class="text-xl font-bold text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
-            </div>
-            <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                STATUS: <span id="systemStatus" class="text-yellow-400">Initializing...</span>
-            </div>
+    <div class="border-b border-slate-800 pb-4 mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-emerald-400">
+            ConsumptionPulse 
+            <span class="bg-blue-600 text-white text-sm px-2 py-1 rounded ml-2">V6.0 Live</span>
+        </h1>
+        <div id="status" class="text-yellow-400 font-mono text-sm">System: Booting...</div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-slate-900 p-4 rounded border border-slate-800">
+            <div class="text-slate-500 text-xs uppercase">USA Energy</div>
+            <div id="usa" class="text-3xl font-bold mt-2">Loading...</div>
         </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-xs uppercase tracking-wider">United States</p>
-                <div class="mt-2 text-3xl font-bold text-white" id="val-USA">---</div>
-                <div class="text-xs text-slate-500">kWh Energy/Capita</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-xs uppercase tracking-wider">China</p>
-                <div class="mt-2 text-3xl font-bold text-white" id="val-CHN">---</div>
-                <div class="text-xs text-slate-500">kWh Energy/Capita</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <p class="text-slate-400 text-xs uppercase tracking-wider">India</p>
-                <div class="mt-2 text-3xl font-bold text-white" id="val-IND">---</div>
-                <div class="text-xs text-slate-500">kWh Energy/Capita</div>
-            </div>
+        <div class="bg-slate-900 p-4 rounded border border-slate-800">
+            <div class="text-slate-500 text-xs uppercase">China Energy</div>
+            <div id="chn" class="text-3xl font-bold mt-2">Loading...</div>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Compare Data</h2>
-                    <p class="text-sm text-slate-400">Select regions to visualize gap.</p>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-medium text-slate-500 uppercase">Baseline</label>
-                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
-                            <option value="USA">United States</option>
-                            <option value="EUU">European Union</option>
-                            <option value="CHN">China</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-medium text-slate-500 uppercase">Target</label>
-                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300">
-                            <option value="IND">India</option>
-                            <option value="BRA">Brazil</option>
-                            <option value="NGA">Nigeria</option>
-                        </select>
-                    </div>
-                    <button onclick="updateChart()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all">
-                        Run Comparison
-                    </button>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 relative h-[400px]">
-                <canvas id="mainChart"></canvas>
-            </div>
+        <div class="bg-slate-900 p-4 rounded border border-slate-800">
+            <div class="text-slate-500 text-xs uppercase">India Energy</div>
+            <div id="ind" class="text-3xl font-bold mt-2">Loading...</div>
         </div>
+    </div>
 
-        <div id="debugLog" class="text-xs font-mono text-red-400 mt-8 p-4 bg-red-900/10 border border-red-900/50 rounded hidden"></div>
+    <div class="bg-slate-900 p-4 rounded border border-slate-800 h-64 mb-6">
+        <canvas id="myChart"></canvas>
+    </div>
 
-    </main>
+    <div id="logs" class="bg-black p-4 font-mono text-xs text-green-400 h-32 overflow-y-auto border border-green-900">
+        > V6 Dashboard initialized.<br>
+    </div>
 
     <script>
-        // BACKUP DATA
-        const BACKUP_DATA = {
-            "USA": { "energy": 6804 }, "CHN": { "energy": 2300 }, "IND": { "energy": 690 },
-            "BRA": { "energy": 1400 }, "NGA": { "energy": 600 },  "EUU": { "energy": 3200 }
+        function log(msg) {
+            document.getElementById('logs').innerHTML += `> ${msg}<br>`;
+        }
+
+        const BACKUP = {
+            "USA": { energy: 6800 }, "CHN": { energy: 2300 }, "IND": { energy: 700 }
         };
 
-        let myChart;
-        let realData = {};
+        function updateScreen(data, source) {
+            log(`Displaying data from: ${source}`);
+            const getEnergy = (code) => data[code] ? data[code].energy.toLocaleString() : "---";
+            const getEnergyRaw = (code) => data[code] ? data[code].energy : 0;
 
-        // 1. Load Data
-        async function loadData() {
-            try {
-                const response = await fetch('global_stats.json?t=' + new Date().getTime());
-                if (!response.ok) throw new Error("File not found");
-                
-                const json = await response.json();
-                realData = json.data;
-                
-                document.getElementById('systemStatus').innerText = "Live Feed Active";
-                document.getElementById('systemStatus').className = "text-emerald-400 font-bold";
-
-            } catch (error) {
-                console.warn("Using Backup:", error);
-                realData = BACKUP_DATA;
-                document.getElementById('systemStatus').innerText = "Backup Mode";
-                document.getElementById('systemStatus').className = "text-amber-400 font-bold";
-            }
-
-            // Update the big numbers on screen
-            updateScorecards();
-            // Draw chart
-            initChart();
-        }
-
-        // 2. Update Scorecards (The big numbers)
-        function updateScorecards() {
-            if(realData['USA']) document.getElementById('val-USA').innerText = realData['USA'].energy.toLocaleString();
-            if(realData['CHN']) document.getElementById('val-CHN').innerText = realData['CHN'].energy.toLocaleString();
-            if(realData['IND']) document.getElementById('val-IND').innerText = realData['IND'].energy.toLocaleString();
-        }
-
-        // 3. Draw Chart
-        function initChart() {
-            const ctx = document.getElementById('mainChart');
+            document.getElementById('usa').innerText = getEnergy('USA');
+            document.getElementById('chn').innerText = getEnergy('CHN');
+            document.getElementById('ind').innerText = getEnergy('IND');
             
-            // Safe check: default values
-            const baseVal = realData['USA'] ? realData['USA'].energy : 0;
-            const targetVal = realData['IND'] ? realData['IND'].energy : 0;
+            document.getElementById('status').innerText = `System: Active (${source})`;
+            document.getElementById('status').className = "text-emerald-400 font-mono text-sm";
+            
+            const ctx = document.getElementById('myChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['USA', 'China', 'India'],
+                    datasets: [{
+                        label: 'Energy Use (kWh)',
+                        data: [getEnergyRaw('USA'), getEnergyRaw('CHN'), getEnergyRaw('IND')],
+                        backgroundColor: ['#3b82f6', '#f59e0b', '#10b981']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
 
-            if (myChart) myChart.destroy();
+        async function start() {
+            // 1. Show backup first (Instant Paint)
+            updateScreen(BACKUP, "BACKUP_MODE");
 
+            // 2. Hunter-Seeker Logic: Try both filenames
+            log("Scanning for live data files...");
+            
             try {
-                myChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['United States', 'India'],
-                        datasets: [{
-                            label: 'Energy (kWh/capita)',
-                            data: [baseVal, targetVal],
-                            backgroundColor: ['#3b82f6', '#10b981'],
-                            borderWidth: 0,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, beginAtZero: true },
-                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                        }
-                    }
-                });
-            } catch (err) {
-                document.getElementById('debugLog').innerText = "Chart Error: " + err.message;
-                document.getElementById('debugLog').classList.remove('hidden');
+                // Try the file your robot just created
+                let res = await fetch('global_data.json?t=' + Date.now());
+                
+                if (!res.ok) {
+                    // Try the old filename just in case
+                    res = await fetch('global_stats.json?t=' + Date.now());
+                }
+
+                if (res.ok) {
+                    const json = await res.json();
+                    log("SUCCESS: Live data file found!");
+                    updateScreen(json.data, "LIVE_FEED");
+                } else {
+                    log("Warning: No live files found. Using Backup.");
+                }
+            } catch (e) {
+                log("Network Error: " + e.message);
             }
         }
 
-        // 4. Button Click Logic
-        function updateChart() {
-            const baseCode = document.getElementById('baselineSelect').value;
-            const targetCode = document.getElementById('targetSelect').value;
-            const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
-            const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
-
-            const baseVal = realData[baseCode] ? realData[baseCode].energy : 0;
-            const targetVal = realData[targetCode] ? realData[targetCode].energy : 0;
-
-            myChart.data.labels = [baseName, targetName];
-            myChart.data.datasets[0].data = [baseVal, targetVal];
-            myChart.update();
-        }
-
-        loadData();
+        start();
     </script>
 </body>
 </html>
