@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ConsumptionPulse V8</title>
+    <title>ConsumptionPulse V9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,7 +11,7 @@
     <div class="border-b border-slate-800 pb-4 mb-6 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-emerald-400">
             ConsumptionPulse 
-            <span class="bg-emerald-600 text-white text-sm px-2 py-1 rounded ml-2">V8.0 Final</span>
+            <span class="bg-blue-500 text-white text-sm px-2 py-1 rounded ml-2">V9.0 Diagnostic</span>
         </h1>
         <div id="status" class="text-yellow-400 font-mono text-sm">System: Scanning...</div>
     </div>
@@ -35,11 +35,14 @@
         <canvas id="myChart"></canvas>
     </div>
 
-    <div id="logs" class="bg-black p-4 font-mono text-xs text-green-400 h-32 overflow-y-auto border border-green-900">
-        > V8 Master Key initialized.<br>
+    <div id="logs" class="bg-black p-4 font-mono text-xs text-green-400 h-40 overflow-y-auto border border-green-900">
+        > V9 System initialized.<br>
     </div>
 
     <script>
+        // GLOBAL CHART VARIABLE (Fixes the canvas crash)
+        let myChart = null;
+
         function log(msg) {
             document.getElementById('logs').innerHTML += `> ${msg}<br>`;
         }
@@ -49,10 +52,25 @@
         };
 
         function updateScreen(data, source) {
-            log(`Displaying data from: ${source}`);
+            log(`--------------------------`);
+            log(`Rendering Source: ${source}`);
+
+            // 1. DATA INSPECTION (X-Ray)
+            // If we are live, print the keys to see why numbers are missing
+            if (source === "LIVE_FEED") {
+                const keys = Object.keys(data).join(", ");
+                log(`Available Keys in Data: [${keys}]`);
+            }
             
-            const getVal = (code) => data[code] ? data[code].energy.toLocaleString() : "---";
-            const getRaw = (code) => data[code] ? data[code].energy : 0;
+            // 2. SAFE DATA GETTER (Try uppercase AND lowercase)
+            const getVal = (code) => {
+                let entry = data[code] || data[code.toLowerCase()]; 
+                return entry && entry.energy ? entry.energy.toLocaleString() : "---";
+            };
+            const getRaw = (code) => {
+                let entry = data[code] || data[code.toLowerCase()];
+                return entry && entry.energy ? entry.energy : 0;
+            };
 
             document.getElementById('usa').innerText = getVal('USA');
             document.getElementById('chn').innerText = getVal('CHN');
@@ -61,8 +79,13 @@
             document.getElementById('status').innerText = `System: Active (${source})`;
             document.getElementById('status').className = "text-emerald-400 font-mono text-sm";
             
+            // 3. CHART CLEANUP (The Crash Fix)
             const ctx = document.getElementById('myChart');
-            new Chart(ctx, {
+            if (myChart) {
+                myChart.destroy(); // Wipe the old chart first
+            }
+
+            myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['USA', 'China', 'India'],
@@ -77,32 +100,23 @@
         }
 
         async function start() {
-            // 1. Show backup first
             updateScreen(BACKUP, "BACKUP_MODE");
 
-            // 2. Try to fetch the live file
-            log("Attempting to unlock live data...");
-            
+            log("Connecting to live database...");
             try {
-                // Fetch the file
                 let res = await fetch('global_data.json?t=' + Date.now());
-                if (!res.ok) {
-                    res = await fetch('global_stats.json?t=' + Date.now());
-                }
+                if (!res.ok) res = await fetch('global_stats.json?t=' + Date.now());
 
                 if (res.ok) {
                     const json = await res.json();
                     let validData = null;
-                    
-                    // V8 INTELLIGENCE: Check all possible folders
+
+                    // DEEP SEARCH FOR DATA
                     if (json.records) {
-                        log("Structure: Found 'records' folder (Correct!).");
                         validData = json.records;
                     } else if (json.data) {
-                        log("Structure: Found 'data' folder.");
                         validData = json.data;
                     } else {
-                        log("Structure: Flat format.");
                         validData = json;
                     }
 
@@ -111,10 +125,10 @@
                         updateScreen(validData, "LIVE_FEED");
                     }
                 } else {
-                    log("Warning: No live files found. Using Backup.");
+                    log("Warning: Live file not found.");
                 }
             } catch (e) {
-                log("Network Error: " + e.message);
+                log("Error: " + e.message);
             }
         }
 
