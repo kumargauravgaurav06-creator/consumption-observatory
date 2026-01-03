@@ -6,197 +6,180 @@
     <title>ConsumptionPulse | Global Observatory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="bg-[#0b1121] text-slate-300 min-h-screen pb-20">
+<body class="bg-slate-950 text-white antialiased selection:bg-emerald-500 selection:text-white">
 
-    <nav class="border-b border-slate-800 bg-[#0b1121]/90 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span class="font-bold text-white tracking-tight">Consumption<span class="text-emerald-500">Pulse</span></span>
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Consumption<span class="text-emerald-400">Pulse</span></h1>
             </div>
-            <div id="lastUpdated" class="text-xs font-mono text-slate-500">SYSTEM LOADING...</div>
+            <div class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+                SYSTEM STATUS: <span class="text-emerald-400">ONLINE</span>
+            </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-6 py-8">
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
 
-        <div class="grid lg:grid-cols-12 gap-6 mb-8">
-            <div class="lg:col-span-4 glass rounded-xl p-6">
-                <h2 class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">Comparative Analysis</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Global Energy Load</p>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-3xl font-bold text-white">165,000</span>
+                    <span class="text-sm text-slate-500">TWh</span>
+                </div>
+                <div class="mt-2 text-xs text-emerald-400 font-mono">▲ 2.4% vs last year</div>
+            </div>
+            
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Active Monitoring</p>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-3xl font-bold text-white">195</span>
+                    <span class="text-sm text-slate-500">Nations</span>
+                </div>
+                <div class="mt-2 text-xs text-blue-400 font-mono">● Real-time Coverage</div>
+            </div>
+
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Carbon Intensity</p>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-3xl font-bold text-white">421</span>
+                    <span class="text-sm text-slate-500">PPM</span>
+                </div>
+                <div class="mt-2 text-xs text-amber-400 font-mono">⚠ Critical Level</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+            
+            <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-white mb-1">Comparative Analysis</h2>
+                    <p class="text-sm text-slate-400">Select regions to compare consumption efficiency.</p>
+                </div>
+
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs text-slate-400">Baseline Nation</label>
-                        <select id="countryA" onchange="updateComparison()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"></select>
+                        <label class="block text-xs font-medium text-slate-500 mb-2 uppercase">Baseline Region</label>
+                        <select id="baselineSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                            <option value="USA">United States</option>
+                            <option value="EU">European Union</option>
+                            <option value="CN">China</option>
+                        </select>
                     </div>
-                    <div class="flex justify-center"><span class="text-xs font-mono text-slate-600">VS</span></div>
+                    
+                    <div class="flex justify-center text-slate-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                    </div>
+
                     <div>
-                        <label class="text-xs text-slate-400">Target Nation</label>
-                        <select id="countryB" onchange="updateComparison()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"></select>
+                        <label class="block text-xs font-medium text-slate-500 mb-2 uppercase">Target Region</label>
+                        <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                            <option value="IN">India</option>
+                            <option value="BR">Brazil</option>
+                            <option value="NG">Nigeria</option>
+                        </select>
                     </div>
+
+                    <button onclick="updateChart()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                        Run Comparison
+                    </button>
                 </div>
             </div>
 
-            <div class="lg:col-span-8 glass rounded-xl p-6 flex flex-col justify-center">
-                <div id="scorecard" class="space-y-6">
-                    <div class="text-center text-slate-500 animate-pulse">Initializing Neural Link...</div>
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 relative">
+                <div class="absolute top-6 right-6 flex gap-2">
+                    <span class="px-2 py-1 bg-slate-800 rounded text-xs text-slate-400 border border-slate-700">Metric: Energy per Capita</span>
+                </div>
+                <div class="h-full flex items-center justify-center">
+                    <canvas id="mainChart"></canvas>
                 </div>
             </div>
         </div>
-
-        <div class="glass rounded-xl p-6">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h3 class="text-white font-semibold">Global Metrics Explorer</h3>
-                <div class="flex bg-slate-900 rounded-lg p-1">
-                    <button onclick="switchChart('energy')" class="px-4 py-1.5 text-xs font-medium rounded-md text-white bg-slate-700 shadow-sm transition-all" id="btn-energy">Energy</button>
-                    <button onclick="switchChart('co2')" class="px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all" id="btn-co2">CO₂</button>
-                    <button onclick="switchChart('gdp')" class="px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all" id="btn-gdp">GDP</button>
-                </div>
-            </div>
-            <div class="relative h-80 w-full">
-                <canvas id="mainChart"></canvas>
-            </div>
-        </div>
-
+        
     </main>
 
     <script>
-        let globalData = [];
-        let chartInstance = null;
+        // 1. Setup the Chart
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        let myChart;
 
-        // Colors
-        const THEME = {
-            energy: { color: '#10b981', label: 'Energy Use (kg oil/capita)' }, // Emerald
-            co2:    { color: '#f59e0b', label: 'CO₂ Emissions (tons/capita)' }, // Amber
-            gdp:    { color: '#3b82f6', label: 'GDP per Capita (USD)' }         // Blue
+        // Data Storage (This replaces the external database for now)
+        const countryData = {
+            'USA': { energy: 12000, color: '#3b82f6' }, // Blue
+            'EU':  { energy: 6500,  color: '#8b5cf6' }, // Purple
+            'CN':  { energy: 5000,  color: '#f59e0b' }, // Amber
+            'IN':  { energy: 1200,  color: '#10b981' }, // Emerald
+            'BR':  { energy: 2800,  color: '#ec4899' }, // Pink
+            'NG':  { energy: 800,   color: '#6366f1' }  // Indigo
         };
 
-        async function init() {
-            try {
-                const res = await fetch('global_data.json');
-                const json = await res.json();
-                
-                globalData = json.records;
-                document.getElementById('lastUpdated').innerText = "DATA: " + new Date(json.last_updated).toISOString().split('T')[0];
-
-                // Populate Dropdowns
-                const sorted = [...globalData].sort((a,b) => a.country.localeCompare(b.country));
-                const selA = document.getElementById('countryA');
-                const selB = document.getElementById('countryB');
-                
-                sorted.forEach(c => {
-                    selA.add(new Option(c.country, c.code));
-                    selB.add(new Option(c.country, c.code));
-                });
-
-                // Set Smart Defaults
-                selA.value = sorted.find(c => c.country === "United States")?.code || sorted[0].code;
-                selB.value = sorted.find(c => c.country === "China")?.code || sorted[1].code;
-
-                updateComparison();
-                switchChart('energy'); // Default view
-
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function updateComparison() {
-            const codeA = document.getElementById('countryA').value;
-            const codeB = document.getElementById('countryB').value;
-            
-            const dataA = globalData.find(c => c.code === codeA);
-            const dataB = globalData.find(c => c.code === codeB);
-
-            if(!dataA || !dataB) return;
-
-            // Generate the 3-Row Comparison Card
-            const metrics = [
-                { key: 'energy', name: 'Energy Consumption', unit: 'kg', color: 'bg-emerald-500' },
-                { key: 'co2', name: 'Carbon Emissions', unit: 't', color: 'bg-amber-500' },
-                { key: 'gdp', name: 'Economic Output', unit: '$', color: 'bg-blue-500' }
-            ];
-
-            let html = `<div class="grid grid-cols-3 gap-4 text-center mb-4 border-b border-slate-700 pb-4">
-                            <div class="text-xl font-bold text-white">${dataA.country}</div>
-                            <div class="text-xs text-slate-500 font-mono pt-2">VS</div>
-                            <div class="text-xl font-bold text-white">${dataB.country}</div>
-                        </div>`;
-
-            metrics.forEach(m => {
-                const valA = dataA[m.key];
-                const valB = dataB[m.key];
-                const max = Math.max(valA, valB) * 1.2; // Scale factor
-                
-                html += `
-                <div class="mb-5">
-                    <div class="flex justify-between text-xs text-slate-400 mb-1">
-                        <span>${valA.toLocaleString()} ${m.unit}</span>
-                        <span class="font-bold text-slate-200">${m.name}</span>
-                        <span>${valB.toLocaleString()} ${m.unit}</span>
-                    </div>
-                    <div class="flex h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="flex justify-end w-1/2 pr-1 border-r border-slate-900">
-                            <div class="${m.color} rounded-l-full opacity-80" style="width: ${(valA/max)*100}%"></div>
-                        </div>
-                        <div class="flex justify-start w-1/2 pl-1">
-                            <div class="${m.color} rounded-r-full" style="width: ${(valB/max)*100}%"></div>
-                        </div>
-                    </div>
-                </div>`;
-            });
-
-            document.getElementById('scorecard').innerHTML = html;
-        }
-
-        function switchChart(metric) {
-            // Update Buttons
-            ['energy', 'co2', 'gdp'].forEach(m => {
-                const btn = document.getElementById('btn-' + m);
-                if(m === metric) {
-                    btn.className = "px-4 py-1.5 text-xs font-medium rounded-md text-white bg-slate-700 shadow-sm transition-all";
-                } else {
-                    btn.className = "px-4 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all";
-                }
-            });
-
-            // Prepare Data (Top 20 by selected metric)
-            const sorted = [...globalData].sort((a,b) => b[metric] - a[metric]).slice(0, 20);
-
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            
-            if(chartInstance) chartInstance.destroy();
-
-            chartInstance = new Chart(ctx, {
+        function initChart() {
+            myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: sorted.map(d => d.country),
+                    labels: ['United States', 'India'],
                     datasets: [{
-                        label: THEME[metric].label,
-                        data: sorted.map(d => d[metric]),
-                        backgroundColor: THEME[metric].color,
-                        borderRadius: 4
+                        label: 'kWh per Person (Yearly)',
+                        data: [12000, 1200],
+                        backgroundColor: ['#3b82f6', '#10b981'],
+                        borderRadius: 6,
+                        barThickness: 60
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            backgroundColor: '#1e293b',
+                            titleColor: '#fff',
+                            bodyColor: '#94a3b8',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            padding: 12
+                        }
+                    },
                     scales: {
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b' },
+                            border: { display: false }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { weight: 'bold' } },
+                            border: { display: false }
+                        }
                     }
                 }
             });
         }
 
-        init();
+        // 2. Logic to Update Chart when buttons are clicked
+        function updateChart() {
+            const base = document.getElementById('baselineSelect').value;
+            const target = document.getElementById('targetSelect').value;
+            
+            const baseName = document.getElementById('baselineSelect').options[document.getElementById('baselineSelect').selectedIndex].text;
+            const targetName = document.getElementById('targetSelect').options[document.getElementById('targetSelect').selectedIndex].text;
+
+            // Update Chart Data
+            myChart.data.labels = [baseName, targetName];
+            myChart.data.datasets[0].data = [countryData[base].energy, countryData[target].energy];
+            myChart.data.datasets[0].backgroundColor = [countryData[base].color, countryData[target].color];
+            myChart.update();
+        }
+
+        // Start the engine
+        initChart();
     </script>
 </body>
 </html>
