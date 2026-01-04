@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Observatory V10</title>
+    <title>Global Observatory Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -29,7 +29,10 @@
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <span id="year-USA" class="text-[10px] font-mono border border-slate-700 px-2 py-1 rounded text-slate-400">Est. 2023</span>
+                </div>
                 <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">United States</div>
                 <div class="mt-3 flex items-baseline gap-2">
                     <span class="text-4xl font-bold text-white" id="val-USA">---</span>
@@ -37,7 +40,10 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl relative overflow-hidden group">
+                 <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <span id="year-CHN" class="text-[10px] font-mono border border-slate-700 px-2 py-1 rounded text-slate-400">Est. 2023</span>
+                </div>
                 <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">China</div>
                 <div class="mt-3 flex items-baseline gap-2">
                     <span class="text-4xl font-bold text-white" id="val-CHN">---</span>
@@ -45,7 +51,10 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl relative overflow-hidden group">
+                 <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <span id="year-IND" class="text-[10px] font-mono border border-slate-700 px-2 py-1 rounded text-slate-400">Est. 2023</span>
+                </div>
                 <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">India</div>
                 <div class="mt-3 flex items-baseline gap-2">
                     <span class="text-4xl font-bold text-white" id="val-IND">---</span>
@@ -96,31 +105,14 @@
         let realData = {};
         let currentMode = 'energy';
 
-        // --- CONFIGURATION: The 3 Modes ---
         const MODES = {
-            'energy': { 
-                label: 'Energy Use', 
-                unit: 'kWh', 
-                desc: 'Measuring energy consumption per capita (kg oil equivalent).',
-                color: '#6366f1' // Indigo
-            },
-            'gdp': { 
-                label: 'GDP Per Capita', 
-                unit: 'USD', 
-                desc: 'Measuring economic output per person in current US$.',
-                color: '#10b981' // Emerald
-            },
-            'co2': { 
-                label: 'CO2 Emissions', 
-                unit: 'Tons', 
-                desc: 'Measuring metric tons of CO2 emissions per capita.',
-                color: '#f43f5e' // Rose
-            }
+            'energy': { label: 'Energy Use', unit: 'kWh', desc: 'Energy consumption per capita (kg oil equivalent).', color: '#6366f1' },
+            'gdp': { label: 'GDP Per Capita', unit: 'USD', desc: 'Economic output per person (Current US$).', color: '#10b981' },
+            'co2': { label: 'CO2 Emissions', unit: 'Tons', desc: 'Metric tons of CO2 emissions per capita.', color: '#f43f5e' }
         };
 
         async function init() {
             try {
-                // Fetch the new multi-metric file
                 let res = await fetch('global_data.json?t=' + Date.now());
                 if(res.ok) {
                     let json = await res.json();
@@ -132,8 +124,6 @@
 
         function setMode(mode) {
             currentMode = mode;
-            
-            // Highlight the active button
             ['energy', 'gdp', 'co2'].forEach(m => {
                 const btn = document.getElementById('btn-' + m);
                 if (m === mode) {
@@ -144,37 +134,33 @@
                     btn.style.color = "";
                 }
             });
-
-            // Update color theme
             document.getElementById('status-dot').style.backgroundColor = MODES[mode].color;
-            document.getElementById('status-dot').style.boxShadow = `0 0 10px ${MODES[mode].color}`;
-
             updateUI();
         }
 
-        function getVal(code) {
-            // Retrieve value from nested structure
+        function getData(code) {
             let country = realData[code] || realData[code.toLowerCase()];
             if (country && country[currentMode]) {
-                return country[currentMode].value;
+                return country[currentMode];
             }
-            return 0;
+            return { value: 0, year: 'N/A' };
         }
 
         function updateUI() {
             const config = MODES[currentMode];
-
-            // 1. Update Text Descriptions
             document.getElementById('mode-desc').innerText = config.desc;
 
-            // 2. Update Scorecards
+            // Update Cards with Year Badges
             ['USA', 'CHN', 'IND'].forEach(code => {
-                document.getElementById('val-' + code).innerText = getVal(code).toLocaleString();
+                const data = getData(code);
+                document.getElementById('val-' + code).innerText = data.value.toLocaleString();
                 document.getElementById('unit-' + code).innerText = config.unit;
                 document.getElementById('unit-' + code).style.color = config.color;
+                
+                // Show the specific year for transparency
+                document.getElementById('year-' + code).innerText = data.year !== 'N/A' ? data.year : 'No Data';
             });
 
-            // 3. Draw Chart
             drawChart();
         }
 
@@ -194,7 +180,7 @@
                     labels: [baseName, targetName],
                     datasets: [{
                         label: config.label,
-                        data: [getVal(baseCode), getVal(targetCode)],
+                        data: [getData(baseCode).value, getData(targetCode).value],
                         backgroundColor: [config.color, '#334155'],
                         borderRadius: 6,
                         barThickness: 60
@@ -205,21 +191,13 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#64748b' } 
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: '#fff', font: { weight: 'bold' } }
-                        }
+                        y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#fff', font: { weight: 'bold' } } }
                     }
                 }
             });
         }
 
-        // Initialize with default mode
         setMode('energy');
         init();
     </script>
