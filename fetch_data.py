@@ -6,6 +6,8 @@ from datetime import datetime
 
 # --- CONFIGURATION ---
 countries = ['USA', 'CHN', 'IND', 'BRA', 'NGA', 'EUU', 'JPN', 'DEU', 'GBR', 'RUS']
+start_year = 2000
+end_year = 2025
 
 # 1. World Bank (Energy & GDP)
 wb_indicators = {
@@ -13,33 +15,42 @@ wb_indicators = {
     "gdp":    "NY.GDP.PCAP.CD"
 }
 
-# 2. OWID (CO2) - Direct CSV Stream
+# 2. OWID (CO2)
 OWID_CSV_URL = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
 
-print("🤖 ROBOT V9: Starting Enterprise Data Sync...")
+print("🤖 ROBOT V10: Initializing Time-Travel Engine (2000-2024)...")
 data_storage = {}
 
-# --- HELPER: WORLD BANK ---
-def get_world_bank_data(country, code):
-    url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&mrnev=1"
+# Initialize empty storage
+for c in countries:
+    data_storage[c] = {"energy": [], "gdp": [], "co2": []}
+
+# --- HELPER: WORLD BANK HISTORIAN ---
+def fetch_wb_history(country, code, category):
+    # Fetch 25 years of data
+    url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&date={start_year}:{end_year}&per_page=100"
     try:
         with urllib.request.urlopen(url) as response:
             raw = json.loads(response.read().decode())
             if len(raw) > 1 and raw[1]:
-                entry = raw[1][0]
-                val = entry['value']
-                return round(val) if val else 0, entry['date']
-    except:
-        pass
-    return 0, "N/A"
+                history = []
+                for entry in raw[1]:
+                    if entry['value'] is not None:
+                        history.append({
+                            "year": int(entry['date']),
+                            "value": int(entry['value']) # Rounding for smaller file size
+                        })
+                # Sort by year (Old -> New)
+                history.sort(key=lambda x: x['year'])
+                data_storage[country][category] = history
+                print(f"   ✅ {country} {category}: Retrieved {len(history)} years.")
+    except Exception as e:
+        print(f"   ❌ WB Error {country}: {e}")
 
-# --- HELPER: OWID STREAM ENGINE ---
-def fetch_owid_co2_stream():
-    print("   ⬇️ Streaming OWID Climate Database...")
-    co2_cache = {} 
-    
+# --- HELPER: OWID STREAM HISTORIAN ---
+def fetch_owid_history():
+    print("   ⬇️ Streaming 100MB Climate History...")
     try:
-        # Stream the CSV line-by-line (Memory Efficient)
         response = urllib.request.urlopen(OWID_CSV_URL)
         text_stream = io.TextIOWrapper(response, encoding='utf-8')
         reader = csv.DictReader(text_stream)
@@ -50,42 +61,31 @@ def fetch_owid_co2_stream():
             
             if iso in countries:
                 year = row.get('year')
-                co2_raw = row.get('co2_per_capita')
+                co2 = row.get('co2_per_capita')
                 
-                if co2_raw and co2_raw.strip() != "":
-                    try:
-                        # Update cache with latest year found
-                        co2_cache[iso] = {
-                            "value": round(float(co2_raw), 2),
-                            "year": year
-                        }
-                    except ValueError:
-                        pass
-        return co2_cache
-        
+                if year and co2 and co2.strip() != "":
+                    yr_int = int(year)
+                    if start_year <= yr_int <= end_year:
+                        data_storage[iso]["co2"].append({
+                            "year": yr_int,
+                            "value": round(float(co2), 2)
+                        })
     except Exception as e:
         print(f"   ❌ Stream Error: {e}")
-        return {}
 
-# --- MAIN EXECUTION ---
-# 1. Fetch CO2
-co2_data = fetch_owid_co2_stream()
+# --- EXECUTION ---
+# 1. Fetch CO2 History
+fetch_owid_history()
 
-# 2. Assemble Country Data
+# 2. Fetch Energy & GDP History
 for country in countries:
-    print(f"   📍 Processing {country}...")
-    data_storage[country] = {}
-
-    # World Bank Metrics
+    print(f"   📍 Building Timeline for {country}...")
+    # Sort CO2 (since CSV stream isn't always ordered)
+    data_storage[country]["co2"].sort(key=lambda x: x['year'])
+    
+    # Fetch WB Data
     for cat, code in wb_indicators.items():
-        val, year = get_world_bank_data(country, code)
-        data_storage[country][cat] = {"value": val, "year": year}
-
-    # CO2 Metrics
-    if country in co2_data:
-        data_storage[country]['co2'] = co2_data[country]
-    else:
-        data_storage[country]['co2'] = {"value": 0, "year": "N/A"}
+        fetch_wb_history(country, code, cat)
 
 # Save
 final_packet = {
@@ -96,4 +96,4 @@ final_packet = {
 with open('global_data.json', 'w') as f:
     json.dump(final_packet, f, indent=2)
 
-print("🎉 SYNC COMPLETE: Global Observatory Updated.")
+print("🎉 TIME MACHINE READY: Historical database compiled.")
