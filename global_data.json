@@ -1,29 +1,145 @@
 {
-  "last_updated": "2026-01-04 04:20:47",
+  "last_updated": "2026-01-04 18:08:31",
   "data": {
     "USA": {
-      "energy": 6364,
-      "year": "2023"
+      "energy": {
+        "value": 6364,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 84534,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     },
     "CHN": {
-      "energy": 2851,
-      "year": "2023"
+      "energy": {
+        "value": 2851,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 13303,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     },
     "IND": {
-      "energy": 754,
-      "year": "2023"
+      "energy": {
+        "value": 754,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 2695,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     },
     "BRA": {
-      "energy": 1481,
-      "year": "2023"
+      "energy": {
+        "value": 1481,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 10311,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     },
     "NGA": {
-      "energy": 333,
-      "year": "2022"
+      "energy": {
+        "value": 333,
+        "year": "2022"
+      },
+      "gdp": {
+        "value": 1084,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     },
     "EUU": {
-      "energy": 2780,
-      "year": "2023"
+      "energy": {
+        "value": 2780,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 43305,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
+    },
+    "JPN": {
+      "energy": {
+        "value": 3039,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 32487,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
+    },
+    "DEU": {
+      "energy": {
+        "value": 2928,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 56104,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
+    },
+    "GBR": {
+      "energy": {
+        "value": 2128,
+        "year": "2023"
+      },
+      "gdp": {
+        "value": 53246,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
+    },
+    "RUS": {
+      "energy": {
+        "value": 5601,
+        "year": "2022"
+      },
+      "gdp": {
+        "value": 14889,
+        "year": "2024"
+      },
+      "co2": {
+        "value": 0,
+        "year": "N/A"
+      }
     }
   }
 }
