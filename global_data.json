@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-01-04 19:05:06",
+  "last_updated": "2026-01-04 19:33:12",
   "data": {
     "USA": {
       "energy": {
@@ -73,8 +73,8 @@
     },
     "EUU": {
       "energy": {
-        "value": 0,
-        "year": "N/A"
+        "value": 2780,
+        "year": "2023"
       },
       "gdp": {
         "value": 43305,
