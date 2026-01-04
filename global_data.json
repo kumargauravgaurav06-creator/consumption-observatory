@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-01-04 19:41:18",
+  "last_updated": "2026-01-04 19:46:32",
   "data": {
     "USA": {
       "energy": {
@@ -82,7 +82,7 @@
       },
       "co2": {
         "value": 0,
-        "year": "N/A"
+        "year": "Est."
       }
     },
     "JPN": {
