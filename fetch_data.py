@@ -4,70 +4,74 @@ from datetime import datetime
 
 # --- CONFIGURATION ---
 countries = ['USA', 'CHN', 'IND', 'BRA', 'NGA', 'EUU', 'JPN', 'DEU', 'GBR', 'RUS']
-indicators = {
-    "energy": "EG.USE.PCAP.KG.OE",  # Energy Use
-    "gdp":    "NY.GDP.PCAP.CD",     # GDP Per Capita
-    "co2":    "EN.ATM.CO2E.PC"      # CO2 Emissions
+
+# SOURCE 1: WORLD BANK (Energy & GDP)
+wb_indicators = {
+    "energy": "EG.USE.PCAP.KG.OE",
+    "gdp":    "NY.GDP.PCAP.CD"
 }
 
-print("🤖 CRAWLER ENGINE V1: Initializing Temporal Search...")
+# SOURCE 2: OUR WORLD IN DATA (CO2)
+# We download their full database directly.
+OWID_URL = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.json"
+
+print("🤖 ROBOT V6: Initializing Federated Data Systems...")
 data_storage = {}
 
-# --- THE CRAWLER FUNCTION ---
-def get_latest_valid_data(country, code):
-    """
-    Fetches last 20 years of data and crawls backwards 
-    until it finds a non-empty value.
-    """
-    # Request last 20 entries (per_page=20) to ensure we hit a valid year
-    url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&per_page=20"
-    
+# --- HELPER: WORLD BANK FETCHER ---
+def get_world_bank_data(country, code):
+    # Ask for the most recent valid number (mrnev=1)
+    url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&mrnev=1"
     try:
         with urllib.request.urlopen(url) as response:
-            raw_data = json.loads(response.read().decode())
-            
-            # World Bank returns [metadata, [data_list]]
-            if len(raw_data) > 1 and raw_data[1]:
-                data_list = raw_data[1]
-                
-                # CRAWL: Loop through the years (newest to oldest)
-                for entry in data_list:
-                    if entry['value'] is not None:
-                        val = entry['value']
-                        year = entry['date']
-                        
-                        # Formatting
-                        if code == "EN.ATM.CO2E.PC": # CO2
-                            final_val = round(val, 2)
-                        else:
-                            final_val = round(val)
-                            
-                        return final_val, year
-                        
-    except Exception as e:
-        print(f"      ❌ Connection failed for {country}: {e}")
+            raw = json.loads(response.read().decode())
+            if len(raw) > 1 and raw[1]:
+                entry = raw[1][0]
+                val = entry['value']
+                return round(val) if val else 0, entry['date']
+    except:
+        pass
+    return 0, "N/A"
+
+# --- HELPER: OWID FETCHER (New!) ---
+print("   ⬇️ Downloading OWID Climate Database (This may take a moment)...")
+try:
+    with urllib.request.urlopen(OWID_URL) as response:
+        owid_db = json.loads(response.read().decode())
+        print("   ✅ OWID Database Downloaded.")
+except Exception as e:
+    print(f"   ❌ OWID Download Failed: {e}")
+    owid_db = {}
+
+def get_owid_co2(country_code):
+    # OWID uses ISO codes (USA, CHN, etc.) just like us.
+    if country_code == "EUU": country_code = "OWID_EU27" # Special code for EU
     
-    return 0, "N/A" # Fallback if 20 years of history is empty
+    if country_code in owid_db:
+        history = owid_db[country_code]['data']
+        # Loop backwards to find the latest 'co2_per_capita'
+        for entry in reversed(history):
+            if 'co2_per_capita' in entry:
+                return round(entry['co2_per_capita'], 2), str(entry['year'])
+    return 0, "N/A"
 
-# --- MAIN EXECUTION ---
+# --- MAIN EXECUTION LOOP ---
 for country in countries:
-    data_storage[country] = {} 
-    print(f"   📍 Scanning history for {country}...")
+    print(f"   📍 Processing {country}...")
+    data_storage[country] = {}
 
-    for category, code in indicators.items():
-        value, year = get_latest_valid_data(country, code)
-        
-        data_storage[country][category] = {
-            "value": value,
-            "year": year
-        }
-        
-        if value > 0:
-            print(f"      ✅ {category.upper()}: Found {value} (from {year})")
-        else:
-            print(f"      ⚠️ {category.upper()}: No data in last 20 years.")
+    # 1. Get Energy & GDP from World Bank
+    for cat, code in wb_indicators.items():
+        val, year = get_world_bank_data(country, code)
+        data_storage[country][cat] = {"value": val, "year": year}
+        print(f"      - {cat.upper()}: {val} ({year})")
 
-# Save Data
+    # 2. Get CO2 from OWID
+    co2_val, co2_year = get_owid_co2(country)
+    data_storage[country]['co2'] = {"value": co2_val, "year": co2_year}
+    print(f"      - CO2: {co2_val} ({co2_year}) [Source: OWID]")
+
+# Save
 final_packet = {
     "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "data": data_storage
@@ -76,4 +80,4 @@ final_packet = {
 with open('global_data.json', 'w') as f:
     json.dump(final_packet, f, indent=2)
 
-print("🎉 CRAWLER FINISHED: Database fully automated and self-healing.")
+print("🎉 SYSTEM COMPLETE: Data merge successful.")
