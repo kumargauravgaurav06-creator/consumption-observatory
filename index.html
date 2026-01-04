@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PULSE | Enterprise Analytics</title>
+    <title>PULSE | 4D Time Machine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/globe.gl"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
@@ -10,13 +10,23 @@
         body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #000; overflow: hidden; }
         .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); }
         .glow-text { text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+        
+        /* Custom Slider Styling */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #34d399; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px #34d399;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 2px;
+        }
     </style>
 </head>
 <body class="text-white">
 
     <div id="globeViz" class="absolute inset-0"></div>
 
-    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-10">
         
         <nav class="flex justify-between items-center pointer-events-auto">
             <div class="flex items-center gap-3">
@@ -43,34 +53,25 @@
                 
                 <div class="grid grid-cols-2 gap-8">
                     <div>
-                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Current Metric</div>
+                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Metric Value</div>
                         <div id="hero-val" class="text-3xl font-bold glow-text">---</div>
                     </div>
                     <div>
-                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Data Source</div>
-                        <div id="hero-year" class="text-xl font-mono text-emerald-400">---</div>
+                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Year</div>
+                        <div id="hero-year" class="text-3xl font-mono text-white">---</div>
                     </div>
                 </div>
-                
-                <p id="hero-desc" class="mt-8 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">
-                    Initializing global telemetry streams...
-                </p>
             </div>
         </div>
 
-        <div class="pointer-events-auto flex justify-center gap-4">
-            <div onclick="focusCountry('USA')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
-                <div class="text-[10px] text-slate-500 font-bold uppercase">USA</div>
-                <div id="mini-USA" class="text-xl font-bold mt-1">---</div>
-            </div>
-            <div onclick="focusCountry('CHN')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
-                <div class="text-[10px] text-slate-500 font-bold uppercase">China</div>
-                <div id="mini-CHN" class="text-xl font-bold mt-1">---</div>
-            </div>
-            <div onclick="focusCountry('IND')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
-                <div class="text-[10px] text-slate-500 font-bold uppercase">India</div>
-                <div id="mini-IND" class="text-xl font-bold mt-1">---</div>
-            </div>
+        <div class="pointer-events-auto w-full max-w-2xl mx-auto glass p-4 rounded-xl flex items-center gap-4 mb-4">
+            <button id="playBtn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500 text-black hover:bg-emerald-400 transition-colors">
+                ▶
+            </button>
+            <span class="text-xs font-mono text-slate-400">2000</span>
+            <input type="range" id="yearSlider" min="2000" max="2023" value="2023" step="1" oninput="updateYear(this.value)">
+            <span class="text-xs font-mono text-slate-400">2023</span>
+            <div class="text-xl font-bold font-mono text-emerald-400 w-16 text-right" id="slider-val">2023</div>
         </div>
     </div>
 
@@ -78,8 +79,10 @@
         let world;
         let globalData = {};
         let currentMode = 'energy';
-        
-        // Exact Coordinates (Lat, Lng)
+        let currentYear = 2023;
+        let isPlaying = false;
+        let playInterval;
+
         const LOCATIONS = {
             'USA': { lat: 39.8, lng: -98.5, name: "United States" },
             'CHN': { lat: 35.8, lng: 104.1, name: "China" },
@@ -94,138 +97,167 @@
         };
 
         const MODES = {
-            'energy': { color: '#34d399', label: 'Energy Use', desc: 'Tracking industrial and residential energy consumption (kWh per capita). Spikes indicate high usage intensity.' },
-            'gdp':    { color: '#60a5fa', label: 'GDP (Wealth)', desc: 'Economic output per capita in USD. Taller pillars represent higher individual economic productivity.' },
-            'co2':    { color: '#f87171', label: 'CO2 Output', desc: 'Metric tons of carbon emissions per person. Red zones indicate critical environmental impact.' }
+            'energy': { color: '#34d399', scale: 6000 },
+            'gdp':    { color: '#60a5fa', scale: 50000 },
+            'co2':    { color: '#f87171', scale: 15 }
         };
 
         async function init() {
-            // 1. Setup Globe with "Rings" (Ripple Effect)
             world = Globe()
                 (document.getElementById('globeViz'))
                 .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                 .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
                 .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-                .atmosphereColor('#3a228a')
-                .atmosphereAltitude(0.15)
-                .pointAltitude(d => d.size * 0.7) // Make spikes taller
-                .pointRadius(1.2) // Thicker pillars (was 0.5)
+                .pointAltitude(d => d.size * 0.7)
+                .pointRadius(1.2)
                 .pointColor(d => d.color)
                 .pointsMerge(true)
-                .ringsData([]) // Initialize empty rings
+                .ringsData([])
                 .ringColor(() => '#ffffff')
                 .ringMaxRadius(5)
                 .ringPropagationSpeed(2)
                 .ringRepeatPeriod(1000);
 
-            // 2. Fetch Data
             try {
                 const res = await fetch('global_data.json?t=' + Date.now());
                 const json = await res.json();
                 globalData = json.data || json;
                 
+                // Start Viz
                 updateViz();
-                
-                // AUTO-START: Focus on USA immediately to fix "Null" values
-                setTimeout(() => focusCountry('USA'), 1000); 
-                
+                setTimeout(() => focusCountry('USA'), 1000);
             } catch(e) { console.error(e); }
         }
 
-        function getVal(code) {
-            let c = globalData[code] || globalData[code.toLowerCase()];
-            return c && c[currentMode] ? c[currentMode] : { value: 0, year: 'N/A' };
+        // --- TIME TRAVEL LOGIC ---
+        function getVal(code, year) {
+            let country = globalData[code] || globalData[code.toLowerCase()];
+            if (!country || !country[currentMode]) return 0;
+            
+            // Find data point for specific year
+            const history = country[currentMode];
+            const point = history.find(p => p.year == year);
+            
+            // If exact year missing, fallback to nearest previous year (simple interpolation)
+            if (!point) {
+                const prev = history.filter(p => p.year < year).pop();
+                return prev ? prev.value : 0;
+            }
+            return point.value;
+        }
+
+        function updateYear(year) {
+            currentYear = parseInt(year);
+            document.getElementById('slider-val').innerText = currentYear;
+            updateViz();
+            
+            // Update HUD text if country is focused
+            const name = document.getElementById('hero-country').innerText;
+            if(name !== "Loading...") {
+                const code = Object.keys(LOCATIONS).find(key => LOCATIONS[key].name === name);
+                if(code) updateHUD(code);
+            }
+        }
+
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            if(isPlaying) {
+                clearInterval(playInterval);
+                btn.innerText = "▶";
+                isPlaying = false;
+            } else {
+                btn.innerText = "❚❚";
+                isPlaying = true;
+                if(currentYear >= 2023) currentYear = 2000; // Loop back
+                
+                playInterval = setInterval(() => {
+                    currentYear++;
+                    if(currentYear > 2023) {
+                        currentYear = 2023;
+                        togglePlay(); // Stop at end
+                    }
+                    document.getElementById('yearSlider').value = currentYear;
+                    updateYear(currentYear);
+                }, 400); // Speed: 400ms per year
+            }
         }
 
         function updateViz() {
             const config = MODES[currentMode];
             const pointsData = [];
-            const ringsData = []; // Ripples
+            const ringsData = [];
 
             for (const [code, loc] of Object.entries(LOCATIONS)) {
-                const data = getVal(code);
+                const val = getVal(code, currentYear);
                 
-                // Scaling Logic
-                let rawSize = data.value;
-                let scaleFactor = currentMode === 'gdp' ? 50000 : (currentMode === 'energy' ? 6000 : 15);
-                let size = rawSize / scaleFactor;
-                
+                // Scale
+                let size = val / config.scale;
                 if (size < 0.1) size = 0.1;
                 if (size > 1.2) size = 1.2;
 
-                // Create the Pillar
                 pointsData.push({
                     lat: loc.lat, lng: loc.lng,
                     size: size, color: config.color,
                     code: code
                 });
 
-                // Create the Ripple Ring (Only for active countries)
-                if (data.value > 0) {
+                if (val > 0) {
                     ringsData.push({
                         lat: loc.lat, lng: loc.lng,
-                        maxR: size * 4, // Ring size depends on data value
+                        maxR: size * 4,
                         color: config.color
                     });
-                }
-
-                // Update Footer Stats
-                if(['USA','CHN','IND'].includes(code)) {
-                    document.getElementById('mini-'+code).innerText = data.value.toLocaleString();
-                    document.getElementById('mini-'+code).style.color = config.color;
                 }
             }
 
             world.pointsData(pointsData);
-            world.ringsData(ringsData); // Add the ripples
+            world.ringsData(ringsData);
             
-            // Update Text
-            document.getElementById('hero-desc').innerText = config.desc;
-            
-            // Highlight Buttons
+            // Update buttons
             ['energy', 'gdp', 'co2'].forEach(m => {
                 const btn = document.getElementById('btn-'+m);
-                const isActive = m === currentMode;
-                btn.className = isActive 
-                    ? `px-5 py-2 text-xs font-bold rounded transition-all border border-white/20 shadow-[0_0_15px_${MODES[m].color}] text-white`
-                    : "px-5 py-2 text-xs font-bold rounded transition-all text-slate-500 hover:text-white";
-                if(isActive) btn.style.backgroundColor = MODES[m].color; 
-                else btn.style.backgroundColor = 'transparent';
+                if(m === currentMode) {
+                    btn.style.backgroundColor = MODES[m].color;
+                    btn.style.color = 'white';
+                    btn.style.boxShadow = `0 0 15px ${MODES[m].color}`;
+                } else {
+                    btn.style.backgroundColor = 'transparent';
+                    btn.style.color = '#94a3b8';
+                    btn.style.boxShadow = 'none';
+                }
             });
         }
 
         function setMode(mode) {
             currentMode = mode;
             updateViz();
-            // Re-focus on current country to update text
             const currentName = document.getElementById('hero-country').innerText;
             const code = Object.keys(LOCATIONS).find(key => LOCATIONS[key].name === currentName);
-            if(code) focusCountry(code);
+            if(code) updateHUD(code);
+        }
+
+        function updateHUD(code) {
+            const loc = LOCATIONS[code];
+            const val = getVal(code, currentYear);
+            const config = MODES[currentMode];
+
+            document.getElementById('hero-country').innerText = loc.name;
+            document.getElementById('hero-val').innerText = val.toLocaleString();
+            document.getElementById('hero-val').style.color = config.color;
+            document.getElementById('hero-val').style.textShadow = `0 0 20px ${config.color}`;
+            document.getElementById('hero-year').innerText = currentYear;
+            document.getElementById('live-indicator').style.backgroundColor = config.color;
         }
 
         function focusCountry(code) {
             const loc = LOCATIONS[code];
-            const data = getVal(code);
-            const config = MODES[currentMode];
-            
-            // 1. Fly Camera
             world.pointOfView({ lat: loc.lat, lng: loc.lng, altitude: 1.8 }, 1200);
-
-            // 2. Update HUD
-            document.getElementById('hero-country').innerText = loc.name;
-            document.getElementById('hero-val').innerText = data.value.toLocaleString();
-            document.getElementById('hero-val').style.color = config.color;
-            document.getElementById('hero-val').style.textShadow = `0 0 20px ${config.color}`;
-            
-            document.getElementById('hero-year').innerText = "FY " + data.year;
-            
-            // 3. Update Indicator Color
-            document.getElementById('live-indicator').style.backgroundColor = config.color;
+            updateHUD(code);
         }
 
         init();
         world.controls().autoRotate = true;
-        world.controls().autoRotateSpeed = 0.3;
+        world.controls().autoRotateSpeed = 0.5;
     </script>
 </body>
 </html>
