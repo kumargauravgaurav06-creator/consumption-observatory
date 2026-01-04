@@ -2,26 +2,24 @@ import json
 import urllib.request
 from datetime import datetime
 
-# --- CONFIGURATION: 10 Major Economies ---
+# --- CONFIGURATION ---
 countries = ['USA', 'CHN', 'IND', 'BRA', 'NGA', 'EUU', 'JPN', 'DEU', 'GBR', 'RUS']
-
-# --- METRICS TO TRACK ---
 indicators = {
-    "energy": "EG.USE.PCAP.KG.OE",  # Energy Use (kg oil equiv)
-    "gdp":    "NY.GDP.PCAP.CD",     # GDP Per Capita (USD)
-    "co2":    "EN.ATM.CO2E.PC"      # CO2 Emissions (metric tons)
+    "energy": "EG.USE.PCAP.KG.OE",
+    "gdp":    "NY.GDP.PCAP.CD",
+    "co2":    "EN.ATM.CO2E.PC"
 }
 
-print("🤖 ROBOT V2: Starting Multi-Metric Mission...")
+print("🤖 ROBOT V3: Starting Deep Search (2015-2025)...")
 data_storage = {}
 
 for country in countries:
-    data_storage[country] = {} # Create a folder for this country
+    data_storage[country] = {} 
     print(f"   📍 Analyzing {country}...")
 
     for category, code in indicators.items():
-        # Fetch 5 years of data to find the most recent valid number
-        url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&per_page=5&date=2019:2025"
+        # UPDATE: Looking back 10 years (2015-2025) to find CO2 data
+        url = f"http://api.worldbank.org/v2/country/{country}/indicator/{code}?format=json&per_page=10&date=2015:2025"
         
         try:
             with urllib.request.urlopen(url) as response:
@@ -35,16 +33,14 @@ for country in countries:
                         if entry['value'] is not None:
                             val = entry['value']
                             
-                            # Formatting: Round GDP/Energy, keep decimals for CO2
                             if category == "co2":
                                 found_val = round(val, 2)
                             else:
                                 found_val = round(val)
                                 
                             found_year = entry['date']
-                            break # Found it! Stop looking.
+                            break 
                 
-                # Save the data
                 data_storage[country][category] = {
                     "value": found_val,
                     "year": found_year
@@ -55,7 +51,6 @@ for country in countries:
             print(f"      ❌ Error fetching {category}: {e}")
             data_storage[country][category] = {"value": 0, "year": "N/A"}
 
-# Save the package
 final_packet = {
     "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "data": data_storage
@@ -64,4 +59,4 @@ final_packet = {
 with open('global_data.json', 'w') as f:
     json.dump(final_packet, f, indent=2)
 
-print("🎉 MISSION COMPLETE: Multi-metric database saved.")
+print("🎉 MISSION COMPLETE: Deep search finished.")
