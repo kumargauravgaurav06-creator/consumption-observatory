@@ -2,76 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PULSE | 4D Time Machine</title>
+    <title>PULSE | Global Intelligence Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/globe.gl"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #000; overflow: hidden; }
-        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); }
+        .glass { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
         .glow-text { text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+        .rank-item { transition: all 0.3s ease; }
         
         /* Custom Slider Styling */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
-            background: #34d399; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px #34d399;
+            background: #34d399; cursor: pointer; margin-top: -6px; box-shadow: 0 0 15px #34d399; border: 2px solid white;
         }
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 2px;
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.15); border-radius: 2px;
         }
     </style>
 </head>
-<body class="text-white">
+<body class="text-white selection:bg-emerald-500/30">
 
     <div id="globeViz" class="absolute inset-0"></div>
 
-    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-10">
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
         
-        <nav class="flex justify-between items-center pointer-events-auto">
-            <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
-                <h1 class="text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">PULSE.IO</h1>
+        <nav class="flex justify-between items-start pointer-events-auto">
+            <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">PULSE.IO</h1>
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono mt-1 tracking-widest">TEMPORAL ANALYTICS ENGINE</div>
             </div>
             
             <div class="glass p-1 rounded-lg flex gap-1">
-                <button onclick="setMode('energy')" id="btn-energy" class="px-5 py-2 text-xs font-bold rounded transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">ENERGY</button>
-                <button onclick="setMode('gdp')" id="btn-gdp" class="px-5 py-2 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">WEALTH</button>
-                <button onclick="setMode('co2')" id="btn-co2" class="px-5 py-2 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">CARBON</button>
+                <button onclick="setMode('energy')" id="btn-energy" class="px-3 md:px-5 py-2 text-[10px] md:text-xs font-bold rounded transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">ENERGY</button>
+                <button onclick="setMode('gdp')" id="btn-gdp" class="px-3 md:px-5 py-2 text-[10px] md:text-xs font-bold rounded transition-all text-slate-400 hover:text-white">WEALTH</button>
+                <button onclick="setMode('co2')" id="btn-co2" class="px-3 md:px-5 py-2 text-[10px] md:text-xs font-bold rounded transition-all text-slate-400 hover:text-white">CARBON</button>
             </div>
         </nav>
 
-        <div class="pointer-events-auto mt-10">
-            <div class="glass p-8 rounded-2xl max-w-sm transition-all hover:border-emerald-500/50 group">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-mono text-emerald-400 tracking-[0.2em] uppercase">Target Locked</span>
-                    <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <div class="flex-grow flex justify-between items-center mt-6 relative">
+            
+            <div class="pointer-events-auto">
+                <div class="glass p-6 md:p-8 rounded-2xl max-w-xs transition-all hover:border-emerald-500/50 group">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase">Target Locked</span>
+                        <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    </div>
+                    
+                    <h2 id="hero-country" class="text-4xl md:text-5xl font-bold mb-2 tracking-tighter">Loading...</h2>
+                    <div class="h-1 w-12 bg-gradient-to-r from-emerald-500 to-transparent mb-6 group-hover:w-full transition-all duration-500"></div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Metric Value</div>
+                            <div id="hero-val" class="text-2xl md:text-3xl font-bold glow-text">---</div>
+                        </div>
+                        <div>
+                            <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Global Rank</div>
+                            <div id="hero-rank" class="text-xl font-mono text-white">#--</div>
+                        </div>
+                    </div>
                 </div>
-                
-                <h2 id="hero-country" class="text-6xl font-bold mb-2 tracking-tighter">Loading...</h2>
-                <div class="h-1 w-16 bg-gradient-to-r from-emerald-500 to-transparent mb-8 group-hover:w-full transition-all duration-500"></div>
-                
-                <div class="grid grid-cols-2 gap-8">
-                    <div>
-                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Metric Value</div>
-                        <div id="hero-val" class="text-3xl font-bold glow-text">---</div>
-                    </div>
-                    <div>
-                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Year</div>
-                        <div id="hero-year" class="text-3xl font-mono text-white">---</div>
-                    </div>
+            </div>
+
+            <div class="pointer-events-auto absolute right-0 top-10 md:static">
+                <div class="glass p-4 rounded-xl min-w-[200px]">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Top 5 Leaders</div>
+                    <div id="leaderboard" class="space-y-2">
+                        </div>
                 </div>
             </div>
         </div>
 
-        <div class="pointer-events-auto w-full max-w-2xl mx-auto glass p-4 rounded-xl flex items-center gap-4 mb-4">
-            <button id="playBtn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500 text-black hover:bg-emerald-400 transition-colors">
-                ▶
-            </button>
-            <span class="text-xs font-mono text-slate-400">2000</span>
-            <input type="range" id="yearSlider" min="2000" max="2023" value="2023" step="1" oninput="updateYear(this.value)">
-            <span class="text-xs font-mono text-slate-400">2023</span>
-            <div class="text-xl font-bold font-mono text-emerald-400 w-16 text-right" id="slider-val">2023</div>
+        <div class="pointer-events-auto w-full max-w-3xl mx-auto mt-4">
+            
+            <div class="text-center mb-3 min-h-[20px]">
+                <span class="text-emerald-400 text-xs font-mono mr-2">▶ EVENT LOG:</span>
+                <span id="event-ticker" class="text-slate-300 text-xs font-semibold tracking-wide animate-pulse">System Ready</span>
+            </div>
+
+            <div class="glass p-4 rounded-xl flex items-center gap-4">
+                <button id="playBtn" onclick="togglePlay()" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-emerald-500 text-black hover:bg-emerald-400 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                    ▶
+                </button>
+                <span class="text-xs font-mono text-slate-500 hidden md:block">2000</span>
+                <input type="range" id="yearSlider" min="2000" max="2023" value="2023" step="1" oninput="updateYear(this.value)">
+                <span class="text-xs font-mono text-slate-500 hidden md:block">2023</span>
+                <div class="flex-shrink-0 text-xl font-bold font-mono text-emerald-400 w-16 text-right border-l border-white/10 pl-3" id="slider-val">2023</div>
+            </div>
         </div>
     </div>
 
@@ -82,6 +105,18 @@
         let currentYear = 2023;
         let isPlaying = false;
         let playInterval;
+
+        // --- INTELLIGENCE LAYER: Historical Events ---
+        const EVENTS = {
+            2001: "China joins World Trade Organization (WTO)",
+            2008: "Global Financial Crisis triggers market recession",
+            2009: "Economic slowdown impacts global GDP output",
+            2015: "Paris Agreement signed for Climate Action",
+            2020: "COVID-19 Pandemic causes global energy drop",
+            2021: "Post-Pandemic industrial recovery begins",
+            2022: "Global energy crisis & supply chain shifts",
+            2023: "Renewable energy adoption hits record highs"
+        };
 
         const LOCATIONS = {
             'USA': { lat: 39.8, lng: -98.5, name: "United States" },
@@ -97,9 +132,9 @@
         };
 
         const MODES = {
-            'energy': { color: '#34d399', scale: 6000 },
-            'gdp':    { color: '#60a5fa', scale: 50000 },
-            'co2':    { color: '#f87171', scale: 15 }
+            'energy': { color: '#34d399', scale: 6000, unit: 'kWh' },
+            'gdp':    { color: '#60a5fa', scale: 50000, unit: '$' },
+            'co2':    { color: '#f87171', scale: 15, unit: 't' }
         };
 
         async function init() {
@@ -123,22 +158,19 @@
                 const json = await res.json();
                 globalData = json.data || json;
                 
-                // Start Viz
+                // Initialize
                 updateViz();
-                setTimeout(() => focusCountry('USA'), 1000);
+                setTimeout(() => focusCountry('USA'), 1500); // Cinematic Delay
             } catch(e) { console.error(e); }
         }
 
-        // --- TIME TRAVEL LOGIC ---
+        // --- CORE LOGIC ---
         function getVal(code, year) {
             let country = globalData[code] || globalData[code.toLowerCase()];
             if (!country || !country[currentMode]) return 0;
             
-            // Find data point for specific year
             const history = country[currentMode];
             const point = history.find(p => p.year == year);
-            
-            // If exact year missing, fallback to nearest previous year (simple interpolation)
             if (!point) {
                 const prev = history.filter(p => p.year < year).pop();
                 return prev ? prev.value : 0;
@@ -149,9 +181,14 @@
         function updateYear(year) {
             currentYear = parseInt(year);
             document.getElementById('slider-val').innerText = currentYear;
+            
+            // Update Context Ticker
+            const eventText = EVENTS[currentYear] || "Global tracking active...";
+            document.getElementById('event-ticker').innerText = eventText;
+            
             updateViz();
             
-            // Update HUD text if country is focused
+            // Refresh HUD
             const name = document.getElementById('hero-country').innerText;
             if(name !== "Loading...") {
                 const code = Object.keys(LOCATIONS).find(key => LOCATIONS[key].name === name);
@@ -168,17 +205,17 @@
             } else {
                 btn.innerText = "❚❚";
                 isPlaying = true;
-                if(currentYear >= 2023) currentYear = 2000; // Loop back
+                if(currentYear >= 2023) currentYear = 2000; 
                 
                 playInterval = setInterval(() => {
                     currentYear++;
                     if(currentYear > 2023) {
                         currentYear = 2023;
-                        togglePlay(); // Stop at end
+                        togglePlay();
                     }
                     document.getElementById('yearSlider').value = currentYear;
                     updateYear(currentYear);
-                }, 400); // Speed: 400ms per year
+                }, 500); 
             }
         }
 
@@ -186,34 +223,52 @@
             const config = MODES[currentMode];
             const pointsData = [];
             const ringsData = [];
+            
+            // 1. Calculate Data & Build Leaderboard List
+            let ranking = [];
 
             for (const [code, loc] of Object.entries(LOCATIONS)) {
                 const val = getVal(code, currentYear);
+                ranking.push({ code, name: loc.name, val });
                 
-                // Scale
+                // Globe Data
                 let size = val / config.scale;
                 if (size < 0.1) size = 0.1;
                 if (size > 1.2) size = 1.2;
 
                 pointsData.push({
                     lat: loc.lat, lng: loc.lng,
-                    size: size, color: config.color,
-                    code: code
+                    size: size, color: config.color, code: code
                 });
 
                 if (val > 0) {
                     ringsData.push({
                         lat: loc.lat, lng: loc.lng,
-                        maxR: size * 4,
-                        color: config.color
+                        maxR: size * 4, color: config.color
                     });
                 }
             }
 
+            // 2. Sort & Render Leaderboard
+            ranking.sort((a, b) => b.val - a.val);
+            const top5 = ranking.slice(0, 5);
+            
+            const boardHTML = top5.map((item, index) => `
+                <div class="flex justify-between items-center text-xs p-1 border-b border-white/5 hover:bg-white/5 cursor-pointer" onclick="focusCountry('${item.code}')">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-slate-500 w-3">${index + 1}</span>
+                        <span class="font-bold text-white">${item.name}</span>
+                    </div>
+                    <span class="font-mono text-emerald-400">${item.val.toLocaleString()}</span>
+                </div>
+            `).join('');
+            document.getElementById('leaderboard').innerHTML = boardHTML;
+
+            // 3. Render Globe
             world.pointsData(pointsData);
             world.ringsData(ringsData);
             
-            // Update buttons
+            // 4. Update Button Styles
             ['energy', 'gdp', 'co2'].forEach(m => {
                 const btn = document.getElementById('btn-'+m);
                 if(m === currentMode) {
@@ -231,9 +286,6 @@
         function setMode(mode) {
             currentMode = mode;
             updateViz();
-            const currentName = document.getElementById('hero-country').innerText;
-            const code = Object.keys(LOCATIONS).find(key => LOCATIONS[key].name === currentName);
-            if(code) updateHUD(code);
         }
 
         function updateHUD(code) {
@@ -241,11 +293,16 @@
             const val = getVal(code, currentYear);
             const config = MODES[currentMode];
 
+            // Calculate Rank
+            let allVals = Object.keys(LOCATIONS).map(k => getVal(k, currentYear));
+            allVals.sort((a, b) => b - a);
+            const rank = allVals.indexOf(val) + 1;
+
             document.getElementById('hero-country').innerText = loc.name;
-            document.getElementById('hero-val').innerText = val.toLocaleString();
+            document.getElementById('hero-val').innerText = val.toLocaleString() + " " + config.unit;
             document.getElementById('hero-val').style.color = config.color;
             document.getElementById('hero-val').style.textShadow = `0 0 20px ${config.color}`;
-            document.getElementById('hero-year').innerText = currentYear;
+            document.getElementById('hero-rank').innerText = "#" + rank;
             document.getElementById('live-indicator').style.backgroundColor = config.color;
         }
 
