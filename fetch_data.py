@@ -13,10 +13,10 @@ wb_indicators = {
     "gdp":    "NY.GDP.PCAP.CD"
 }
 
-# 2. OWID (CO2) - Direct CSV Link
+# 2. OWID (CO2) - Direct CSV Stream
 OWID_CSV_URL = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
 
-print("🤖 ROBOT V8: Diagnostic Probe Initiated...")
+print("🤖 ROBOT V9: Starting Enterprise Data Sync...")
 data_storage = {}
 
 # --- HELPER: WORLD BANK ---
@@ -29,87 +29,63 @@ def get_world_bank_data(country, code):
                 entry = raw[1][0]
                 val = entry['value']
                 return round(val) if val else 0, entry['date']
-    except Exception as e:
-        print(f"      ⚠️ WB Error ({country}): {e}")
+    except:
+        pass
     return 0, "N/A"
 
-# --- HELPER: OWID STREAM PROBE ---
+# --- HELPER: OWID STREAM ENGINE ---
 def fetch_owid_co2_stream():
-    print("   ⬇️ connecting to OWID Database...")
+    print("   ⬇️ Streaming OWID Climate Database...")
     co2_cache = {} 
     
     try:
-        # STREAMING REQUEST (Low Memory Usage)
+        # Stream the CSV line-by-line (Memory Efficient)
         response = urllib.request.urlopen(OWID_CSV_URL)
-        
-        # Wrapper to read bytes as text stream on the fly
         text_stream = io.TextIOWrapper(response, encoding='utf-8')
         reader = csv.DictReader(text_stream)
         
-        # DIAGNOSTIC: Print the columns we found
-        print(f"   🔎 Columns Found: {reader.fieldnames}")
-        
-        row_count = 0
-        usa_found = False
-        
         for row in reader:
-            row_count += 1
             iso = row.get('iso_code')
-            
-            # Map EU code
             if iso == "OWID_EU27": iso = "EUU"
             
-            # DEBUG: Check if we see USA
-            if iso == "USA" and not usa_found:
-                print(f"   ✅ Found USA entry! Year: {row.get('year')}, CO2: {row.get('co2_per_capita')}")
-                usa_found = True
-
             if iso in countries:
                 year = row.get('year')
-                # CAREFUL: 'co2_per_capita' might be empty string ""
                 co2_raw = row.get('co2_per_capita')
                 
                 if co2_raw and co2_raw.strip() != "":
                     try:
-                        val = float(co2_raw)
+                        # Update cache with latest year found
                         co2_cache[iso] = {
-                            "value": round(val, 2),
+                            "value": round(float(co2_raw), 2),
                             "year": year
                         }
                     except ValueError:
-                        pass # Ignore weird non-number values
-
-        print(f"   ✅ Scanned {row_count} rows. Cache size: {len(co2_cache)} countries.")
+                        pass
         return co2_cache
         
     except Exception as e:
-        print(f"   ❌ FATAL STREAM ERROR: {e}")
+        print(f"   ❌ Stream Error: {e}")
         return {}
 
-# --- EXECUTION ---
-# 1. Run the Probe
+# --- MAIN EXECUTION ---
+# 1. Fetch CO2
 co2_data = fetch_owid_co2_stream()
 
-# 2. Assemble Data
+# 2. Assemble Country Data
 for country in countries:
+    print(f"   📍 Processing {country}...")
     data_storage[country] = {}
 
-    # World Bank
-    print(f"   📍 Processing {country}...")
+    # World Bank Metrics
     for cat, code in wb_indicators.items():
         val, year = get_world_bank_data(country, code)
         data_storage[country][cat] = {"value": val, "year": year}
 
-    # CO2 (From Cache)
+    # CO2 Metrics
     if country in co2_data:
-        data = co2_data[country]
-        data_storage[country]['co2'] = data
-        print(f"      - CO2: {data['value']} ({data['year']})")
+        data_storage[country]['co2'] = co2_data[country]
     else:
-        # FAILSAFE: If stream failed, use manual backup so site doesn't show 0
-        backup_val = 14.4 if country == "USA" else 0
-        data_storage[country]['co2'] = {"value": backup_val, "year": "Est."}
-        print(f"      - CO2: {backup_val} (Backup - No Stream Data)")
+        data_storage[country]['co2'] = {"value": 0, "year": "N/A"}
 
 # Save
 final_packet = {
@@ -120,4 +96,4 @@ final_packet = {
 with open('global_data.json', 'w') as f:
     json.dump(final_packet, f, indent=2)
 
-print("🎉 PROBE COMPLETE.")
+print("🎉 SYNC COMPLETE: Global Observatory Updated.")
