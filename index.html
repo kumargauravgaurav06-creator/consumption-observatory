@@ -2,70 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConsumptionPulse | Global Enterprise</title>
+    <title>PULSE | Enterprise Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/globe.gl"></script> <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/globe.gl"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Space Grotesk', sans-serif; background: #000; overflow: hidden; }
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #000; overflow: hidden; }
+        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); }
+        .glow-text { text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
     </style>
 </head>
 <body class="text-white">
 
-    <div id="globeViz" class="absolute inset-0 z-0"></div>
+    <div id="globeViz" class="absolute inset-0"></div>
 
-    <div class="relative z-10 h-screen flex flex-col pointer-events-none">
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
         
-        <nav class="w-full p-6 flex justify-between items-center pointer-events-auto">
+        <nav class="flex justify-between items-center pointer-events-auto">
             <div class="flex items-center gap-3">
-                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
-                <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">PULSE.IO</h1>
+                <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                <h1 class="text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">PULSE.IO</h1>
             </div>
-            <div class="flex gap-2 bg-black/40 p-1 rounded-lg backdrop-blur-md border border-white/10">
-                <button onclick="setMode('energy')" id="btn-energy" class="px-4 py-2 text-xs font-bold rounded hover:bg-white/10 transition-all text-emerald-400 border border-emerald-500/30">ENERGY</button>
-                <button onclick="setMode('gdp')" id="btn-gdp" class="px-4 py-2 text-xs font-bold rounded hover:bg-white/10 transition-all text-slate-400">WEALTH</button>
-                <button onclick="setMode('co2')" id="btn-co2" class="px-4 py-2 text-xs font-bold rounded hover:bg-white/10 transition-all text-slate-400">CARBON</button>
+            
+            <div class="glass p-1 rounded-lg flex gap-1">
+                <button onclick="setMode('energy')" id="btn-energy" class="px-5 py-2 text-xs font-bold rounded transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">ENERGY</button>
+                <button onclick="setMode('gdp')" id="btn-gdp" class="px-5 py-2 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">WEALTH</button>
+                <button onclick="setMode('co2')" id="btn-co2" class="px-5 py-2 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">CARBON</button>
             </div>
         </nav>
 
-        <div class="flex-grow flex items-center px-6">
-            <div class="glass-panel p-8 rounded-2xl max-w-sm pointer-events-auto transition-all hover:border-emerald-500/50 group">
-                <div class="text-xs font-mono text-emerald-400 mb-2 tracking-widest uppercase">Global Surveillance</div>
-                <h2 id="hero-country" class="text-5xl font-bold mb-1">Earth</h2>
-                <div class="h-0.5 w-12 bg-emerald-500 mb-6 group-hover:w-full transition-all duration-700"></div>
+        <div class="pointer-events-auto mt-10">
+            <div class="glass p-8 rounded-2xl max-w-sm transition-all hover:border-emerald-500/50 group">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-mono text-emerald-400 tracking-[0.2em] uppercase">Target Locked</span>
+                    <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                </div>
                 
-                <div class="grid grid-cols-2 gap-6">
+                <h2 id="hero-country" class="text-6xl font-bold mb-2 tracking-tighter">Loading...</h2>
+                <div class="h-1 w-16 bg-gradient-to-r from-emerald-500 to-transparent mb-8 group-hover:w-full transition-all duration-500"></div>
+                
+                <div class="grid grid-cols-2 gap-8">
                     <div>
-                        <div class="text-slate-400 text-xs uppercase mb-1">Metric Value</div>
-                        <div id="hero-val" class="text-2xl font-bold">---</div>
+                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Current Metric</div>
+                        <div id="hero-val" class="text-3xl font-bold glow-text">---</div>
                     </div>
                     <div>
-                        <div class="text-slate-400 text-xs uppercase mb-1">Data Year</div>
-                        <div id="hero-year" class="text-emerald-400 font-mono text-lg">---</div>
+                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Data Source</div>
+                        <div id="hero-year" class="text-xl font-mono text-emerald-400">---</div>
                     </div>
                 </div>
-                <p id="hero-desc" class="mt-6 text-sm text-slate-300 leading-relaxed">
-                    Select a data mode above to visualize global disparity. Interactive globe visualization powered by WebGL.
+                
+                <p id="hero-desc" class="mt-8 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">
+                    Initializing global telemetry streams...
                 </p>
             </div>
         </div>
 
-        <div class="p-6 grid grid-cols-3 gap-4 pointer-events-auto w-full max-w-4xl mx-auto mb-6">
-            <div class="glass-panel p-4 rounded-xl text-center cursor-pointer hover:bg-white/5 transition-colors" onclick="focusCountry('USA')">
-                <div class="text-xs text-slate-500 uppercase">USA</div>
+        <div class="pointer-events-auto flex justify-center gap-4">
+            <div onclick="focusCountry('USA')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
+                <div class="text-[10px] text-slate-500 font-bold uppercase">USA</div>
                 <div id="mini-USA" class="text-xl font-bold mt-1">---</div>
             </div>
-            <div class="glass-panel p-4 rounded-xl text-center cursor-pointer hover:bg-white/5 transition-colors" onclick="focusCountry('CHN')">
-                <div class="text-xs text-slate-500 uppercase">China</div>
+            <div onclick="focusCountry('CHN')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
+                <div class="text-[10px] text-slate-500 font-bold uppercase">China</div>
                 <div id="mini-CHN" class="text-xl font-bold mt-1">---</div>
             </div>
-            <div class="glass-panel p-4 rounded-xl text-center cursor-pointer hover:bg-white/5 transition-colors" onclick="focusCountry('IND')">
-                <div class="text-xs text-slate-500 uppercase">India</div>
+            <div onclick="focusCountry('IND')" class="glass px-6 py-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all text-center min-w-[120px]">
+                <div class="text-[10px] text-slate-500 font-bold uppercase">India</div>
                 <div id="mini-IND" class="text-xl font-bold mt-1">---</div>
             </div>
         </div>
@@ -76,45 +79,56 @@
         let globalData = {};
         let currentMode = 'energy';
         
-        // Coordinates for our tracked countries (Lat, Lng)
+        // Exact Coordinates (Lat, Lng)
         const LOCATIONS = {
-            'USA': { lat: 37.09, lng: -95.71, name: "United States" },
-            'CHN': { lat: 35.86, lng: 104.19, name: "China" },
-            'IND': { lat: 20.59, lng: 78.96, name: "India" },
-            'BRA': { lat: -14.23, lng: -51.92, name: "Brazil" },
-            'NGA': { lat: 9.08, lng: 8.67, name: "Nigeria" },
-            'EUU': { lat: 54.52, lng: 15.25, name: "Europe" },
-            'JPN': { lat: 36.20, lng: 138.25, name: "Japan" },
-            'DEU': { lat: 51.16, lng: 10.45, name: "Germany" },
-            'GBR': { lat: 55.37, lng: -3.43, name: "UK" },
-            'RUS': { lat: 61.52, lng: 105.31, name: "Russia" }
+            'USA': { lat: 39.8, lng: -98.5, name: "United States" },
+            'CHN': { lat: 35.8, lng: 104.1, name: "China" },
+            'IND': { lat: 20.5, lng: 78.9, name: "India" },
+            'BRA': { lat: -14.2, lng: -51.9, name: "Brazil" },
+            'NGA': { lat: 9.0, lng: 8.6, name: "Nigeria" },
+            'EUU': { lat: 54.5, lng: 15.2, name: "Europe" },
+            'JPN': { lat: 36.2, lng: 138.2, name: "Japan" },
+            'DEU': { lat: 51.1, lng: 10.4, name: "Germany" },
+            'GBR': { lat: 55.3, lng: -3.4, name: "UK" },
+            'RUS': { lat: 61.5, lng: 105.3, name: "Russia" }
         };
 
         const MODES = {
-            'energy': { color: '#34d399', label: 'Energy Use (kWh)', desc: 'High energy consumption often correlates with industrialization.' },
-            'gdp':    { color: '#60a5fa', label: 'GDP per Capita ($)', desc: 'Economic output represents the financial health of the nation.' },
-            'co2':    { color: '#f87171', label: 'CO2 Emissions (Tons)', desc: 'Carbon footprint per person based on consumption patterns.' }
+            'energy': { color: '#34d399', label: 'Energy Use', desc: 'Tracking industrial and residential energy consumption (kWh per capita). Spikes indicate high usage intensity.' },
+            'gdp':    { color: '#60a5fa', label: 'GDP (Wealth)', desc: 'Economic output per capita in USD. Taller pillars represent higher individual economic productivity.' },
+            'co2':    { color: '#f87171', label: 'CO2 Output', desc: 'Metric tons of carbon emissions per person. Red zones indicate critical environmental impact.' }
         };
 
         async function init() {
-            // 1. Initialize the 3D Globe
+            // 1. Setup Globe with "Rings" (Ripple Effect)
             world = Globe()
                 (document.getElementById('globeViz'))
-                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
                 .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
                 .atmosphereColor('#3a228a')
-                .atmosphereAltitude(0.25)
-                .pointAltitude(d => d.size * 0.5) // Height depends on value
-                .pointRadius(0.5)
+                .atmosphereAltitude(0.15)
+                .pointAltitude(d => d.size * 0.7) // Make spikes taller
+                .pointRadius(1.2) // Thicker pillars (was 0.5)
                 .pointColor(d => d.color)
-                .pointsMerge(true);
+                .pointsMerge(true)
+                .ringsData([]) // Initialize empty rings
+                .ringColor(() => '#ffffff')
+                .ringMaxRadius(5)
+                .ringPropagationSpeed(2)
+                .ringRepeatPeriod(1000);
 
             // 2. Fetch Data
             try {
                 const res = await fetch('global_data.json?t=' + Date.now());
                 const json = await res.json();
                 globalData = json.data || json;
+                
                 updateViz();
+                
+                // AUTO-START: Focus on USA immediately to fix "Null" values
+                setTimeout(() => focusCountry('USA'), 1000); 
+                
             } catch(e) { console.error(e); }
         }
 
@@ -126,25 +140,36 @@
         function updateViz() {
             const config = MODES[currentMode];
             const pointsData = [];
+            const ringsData = []; // Ripples
 
-            // Transform our data into 3D points
             for (const [code, loc] of Object.entries(LOCATIONS)) {
                 const data = getVal(code);
-                // Normalize size for visualization (simple scaling)
-                let size = data.value / (currentMode === 'gdp' ? 5000 : (currentMode === 'energy' ? 500 : 2));
-                if (size > 1.5) size = 1.5; // Cap height
-                if (size < 0.1) size = 0.1; // Min height
+                
+                // Scaling Logic
+                let rawSize = data.value;
+                let scaleFactor = currentMode === 'gdp' ? 50000 : (currentMode === 'energy' ? 6000 : 15);
+                let size = rawSize / scaleFactor;
+                
+                if (size < 0.1) size = 0.1;
+                if (size > 1.2) size = 1.2;
 
+                // Create the Pillar
                 pointsData.push({
-                    lat: loc.lat,
-                    lng: loc.lng,
-                    size: size,
-                    color: config.color,
-                    code: code,
-                    value: data.value
+                    lat: loc.lat, lng: loc.lng,
+                    size: size, color: config.color,
+                    code: code
                 });
 
-                // Update Mini Scorecards
+                // Create the Ripple Ring (Only for active countries)
+                if (data.value > 0) {
+                    ringsData.push({
+                        lat: loc.lat, lng: loc.lng,
+                        maxR: size * 4, // Ring size depends on data value
+                        color: config.color
+                    });
+                }
+
+                // Update Footer Stats
                 if(['USA','CHN','IND'].includes(code)) {
                     document.getElementById('mini-'+code).innerText = data.value.toLocaleString();
                     document.getElementById('mini-'+code).style.color = config.color;
@@ -152,42 +177,55 @@
             }
 
             world.pointsData(pointsData);
+            world.ringsData(ringsData); // Add the ripples
             
-            // Update Text UI
+            // Update Text
             document.getElementById('hero-desc').innerText = config.desc;
             
             // Highlight Buttons
             ['energy', 'gdp', 'co2'].forEach(m => {
                 const btn = document.getElementById('btn-'+m);
-                btn.style.borderColor = m === currentMode ? MODES[m].color : 'transparent';
-                btn.style.color = m === currentMode ? MODES[m].color : '#94a3b8';
+                const isActive = m === currentMode;
+                btn.className = isActive 
+                    ? `px-5 py-2 text-xs font-bold rounded transition-all border border-white/20 shadow-[0_0_15px_${MODES[m].color}] text-white`
+                    : "px-5 py-2 text-xs font-bold rounded transition-all text-slate-500 hover:text-white";
+                if(isActive) btn.style.backgroundColor = MODES[m].color; 
+                else btn.style.backgroundColor = 'transparent';
             });
         }
 
         function setMode(mode) {
             currentMode = mode;
             updateViz();
+            // Re-focus on current country to update text
+            const currentName = document.getElementById('hero-country').innerText;
+            const code = Object.keys(LOCATIONS).find(key => LOCATIONS[key].name === currentName);
+            if(code) focusCountry(code);
         }
 
         function focusCountry(code) {
             const loc = LOCATIONS[code];
             const data = getVal(code);
+            const config = MODES[currentMode];
             
-            // Fly the camera to the country
-            world.pointOfView({ lat: loc.lat, lng: loc.lng, altitude: 1.5 }, 1500);
+            // 1. Fly Camera
+            world.pointOfView({ lat: loc.lat, lng: loc.lng, altitude: 1.8 }, 1200);
 
-            // Update Hero Panel
+            // 2. Update HUD
             document.getElementById('hero-country').innerText = loc.name;
             document.getElementById('hero-val').innerText = data.value.toLocaleString();
-            document.getElementById('hero-year').innerText = data.year;
-            document.getElementById('hero-val').style.color = MODES[currentMode].color;
+            document.getElementById('hero-val').style.color = config.color;
+            document.getElementById('hero-val').style.textShadow = `0 0 20px ${config.color}`;
+            
+            document.getElementById('hero-year').innerText = "FY " + data.year;
+            
+            // 3. Update Indicator Color
+            document.getElementById('live-indicator').style.backgroundColor = config.color;
         }
 
         init();
-        
-        // Auto-rotate
         world.controls().autoRotate = true;
-        world.controls().autoRotateSpeed = 0.5;
+        world.controls().autoRotateSpeed = 0.3;
     </script>
 </body>
 </html>
