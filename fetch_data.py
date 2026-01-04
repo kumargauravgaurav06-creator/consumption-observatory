@@ -2,19 +2,17 @@ import json
 import urllib.request
 from datetime import datetime
 
-# --- CONFIGURATION ZONE ---
-# 1. New List of Countries (Added JPN, DEU, GBR, RUS)
+# --- CONFIGURATION: 10 Major Economies ---
 countries = ['USA', 'CHN', 'IND', 'BRA', 'NGA', 'EUU', 'JPN', 'DEU', 'GBR', 'RUS']
 
-# 2. New Categories (The Robot will fetch all of these)
+# --- METRICS TO TRACK ---
 indicators = {
-    "energy": "EG.USE.PCAP.KG.OE",  # Energy use (kg of oil equivalent per capita)
-    "gdp":    "NY.GDP.PCAP.CD",     # GDP per capita (current US$)
-    "co2":    "EN.ATM.CO2E.PC"      # CO2 emissions (metric tons per capita)
+    "energy": "EG.USE.PCAP.KG.OE",  # Energy Use (kg oil equiv)
+    "gdp":    "NY.GDP.PCAP.CD",     # GDP Per Capita (USD)
+    "co2":    "EN.ATM.CO2E.PC"      # CO2 Emissions (metric tons)
 }
-# ---------------------------
 
-print("🤖 ROBOT V2: Starting Multi-Metric Search...")
+print("🤖 ROBOT V2: Starting Multi-Metric Mission...")
 data_storage = {}
 
 for country in countries:
@@ -35,28 +33,29 @@ for country in countries:
                 if len(raw_data) > 1 and raw_data[1]:
                     for entry in raw_data[1]:
                         if entry['value'] is not None:
-                            found_val = entry['value']
-                            # Round GDP and Energy, keep decimals for CO2
-                            if category != "co2":
-                                found_val = round(found_val)
+                            val = entry['value']
+                            
+                            # Formatting: Round GDP/Energy, keep decimals for CO2
+                            if category == "co2":
+                                found_val = round(val, 2)
                             else:
-                                found_val = round(found_val, 2)
+                                found_val = round(val)
                                 
                             found_year = entry['date']
-                            break
+                            break # Found it! Stop looking.
                 
-                # Save the specific metric into the country's folder
+                # Save the data
                 data_storage[country][category] = {
                     "value": found_val,
                     "year": found_year
                 }
-                print(f"      - {category.upper()}: {found_val}")
+                print(f"      - {category.upper()}: {found_val} ({found_year})")
 
         except Exception as e:
             print(f"      ❌ Error fetching {category}: {e}")
             data_storage[country][category] = {"value": 0, "year": "N/A"}
 
-# Save to file
+# Save the package
 final_packet = {
     "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "data": data_storage
@@ -65,4 +64,4 @@ final_packet = {
 with open('global_data.json', 'w') as f:
     json.dump(final_packet, f, indent=2)
 
-print("🎉 UPGRADE COMPLETE: Multi-metric database saved.")
+print("🎉 MISSION COMPLETE: Multi-metric database saved.")
