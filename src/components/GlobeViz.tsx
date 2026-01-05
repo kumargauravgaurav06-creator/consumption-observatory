@@ -1,32 +1,44 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 
 // Define the shape of the data we expect
 type GlobeProps = {
-  year: number;
-  mode: string;
+  year?: number;
+  mode?: string;
 };
 
-export default function GlobeViz({ year, mode }: GlobeProps) {
+export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
   const globeEl = useRef<HTMLDivElement>(null);
-  const globeInstance = useRef<any>(null); // Keep track of the globe instance
+  const globeInstance = useRef<any>(null);
   const [data, setData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Load Data Once
+  // 1. Load Data (Using Direct Raw Link to fix 404s)
   useEffect(() => {
     setMounted(true);
-    fetch('/global_data.json')
-      .then((res) => res.json())
+    // fetching directly from your main branch to ensure data loads
+    fetch('https://raw.githubusercontent.com/kumargauravgaurav06-creator/consumption-observatory/main/public/global_data.json')
+      .then((res) => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
       .then((json) => {
+        console.log("Data Loaded Successfully:", json);
         setData(json.data || json);
       })
-      .catch((err) => console.error("Data Load Error:", err));
+      .catch((err) => {
+        console.error("Data Load Error:", err);
+        // Fallback to local if remote fails
+        fetch('/global_data.json')
+            .then(res => res.json())
+            .then(json => setData(json.data || json))
+            .catch(e => console.error("Fallback Error:", e));
+      });
   }, []);
 
-  // 2. Initialize Globe (Run Only Once)
+  // 2. Initialize Globe
   useEffect(() => {
     if (!mounted || !globeEl.current) return;
 
@@ -37,17 +49,15 @@ export default function GlobeViz({ year, mode }: GlobeProps) {
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .width(window.innerWidth)
       .height(window.innerHeight)
-      .pointAltitude((d: any) => d.size * 0.5) // Altitude based on value
+      .pointAltitude((d: any) => d.size * 0.5)
       .pointRadius(1.2)
-      .pointColor('color') // Use the color property from data
+      .pointColor('color')
       .pointsMerge(true);
 
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.5;
-
     globeInstance.current = world;
 
-    // Handle Resize
     const handleResize = () => {
        world.width(window.innerWidth);
        world.height(window.innerHeight);
@@ -56,15 +66,14 @@ export default function GlobeViz({ year, mode }: GlobeProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, [mounted]);
 
-  // 3. REACTIVE UPDATE: Run whenever 'data', 'year', or 'mode' changes
+  // 3. Update Globe on Change
   useEffect(() => {
     if (!globeInstance.current || !data) return;
 
-    // --- CONFIGURATION BASED ON MODE ---
     const MODE_CONFIG: any = {
-        'ENERGY': { key: 'energy', color: '#34d399', scale: 6000 }, // Green
-        'WEALTH': { key: 'gdp',    color: '#22d3ee', scale: 500 },  // Blue
-        'CARBON': { key: 'co2',    color: '#f87171', scale: 200 }   // Red
+        'ENERGY': { key: 'energy', color: '#34d399', scale: 6000 },
+        'WEALTH': { key: 'gdp',    color: '#22d3ee', scale: 500 },
+        'CARBON': { key: 'co2',    color: '#f87171', scale: 200 }
     };
 
     const config = MODE_CONFIG[mode] || MODE_CONFIG['ENERGY'];
@@ -81,24 +90,18 @@ export default function GlobeViz({ year, mode }: GlobeProps) {
       'RUS': { lat: 61.5, lng: 105.3 }
     };
 
-    // --- DATA PROCESSING LOOP ---
     for (const [code, loc] of Object.entries(LOCATIONS)) {
         const countryData = data[code] || data[code.toLowerCase()];
-        
         if(countryData && countryData[config.key]) {
             let val = 0;
             const metricData = countryData[config.key];
-
-            // Handle Array (Time Series) vs Single Object
             if(Array.isArray(metricData)) {
-                // Find the specific year
                 const yearEntry = metricData.find((d: any) => d.date == year.toString());
                 if (yearEntry) val = yearEntry.value;
             } else if (metricData.value) {
                 val = metricData.value;
             }
             
-            // Only add if we have a value
             if (val > 0) {
                 pointsData.push({
                     lat: loc.lat, 
@@ -109,13 +112,9 @@ export default function GlobeViz({ year, mode }: GlobeProps) {
             }
         }
     }
-
-    // Update the globe efficiently
     globeInstance.current.pointsData(pointsData);
+  }, [data, year, mode]);
 
-  }, [data, year, mode]); // <--- This dependency array is the magic
-
-  if (!mounted) return <div className="absolute top-1/2 left-1/2 -translate-x-1/2 text-emerald-500">Loading Core...</div>;
-
+  if (!mounted) return <div className="text-emerald-500">Loading Core...</div>;
   return <div ref={globeEl} className="absolute inset-0 z-0" />;
 }
