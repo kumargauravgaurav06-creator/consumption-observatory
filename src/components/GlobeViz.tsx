@@ -1,14 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Globe from 'globe.gl';
 
-export default function GlobeViz() {
+// Define the shape of the data we expect
+type GlobeProps = {
+  year: number;
+  mode: string;
+};
+
+export default function GlobeViz({ year, mode }: GlobeProps) {
   const globeEl = useRef<HTMLDivElement>(null);
+  const globeInstance = useRef<any>(null); // Keep track of the globe instance
   const [data, setData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Load Data
+  // 1. Load Data Once
   useEffect(() => {
     setMounted(true);
     fetch('/global_data.json')
@@ -19,9 +26,9 @@ export default function GlobeViz() {
       .catch((err) => console.error("Data Load Error:", err));
   }, []);
 
-  // 2. Initialize Globe
+  // 2. Initialize Globe (Run Only Once)
   useEffect(() => {
-    if (!mounted || !globeEl.current || !data) return;
+    if (!mounted || !globeEl.current) return;
 
     // @ts-ignore
     const world = Globe()(globeEl.current)
@@ -30,18 +37,39 @@ export default function GlobeViz() {
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .width(window.innerWidth)
       .height(window.innerHeight)
-      .pointAltitude((d: any) => d.size * 0.5)
+      .pointAltitude((d: any) => d.size * 0.5) // Altitude based on value
       .pointRadius(1.2)
-      .pointColor((d: any) => d.color)
+      .pointColor('color') // Use the color property from data
       .pointsMerge(true);
 
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.5;
 
-    // --- TRANSFORM DATA ---
+    globeInstance.current = world;
+
+    // Handle Resize
+    const handleResize = () => {
+       world.width(window.innerWidth);
+       world.height(window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mounted]);
+
+  // 3. REACTIVE UPDATE: Run whenever 'data', 'year', or 'mode' changes
+  useEffect(() => {
+    if (!globeInstance.current || !data) return;
+
+    // --- CONFIGURATION BASED ON MODE ---
+    const MODE_CONFIG: any = {
+        'ENERGY': { key: 'energy', color: '#34d399', scale: 6000 }, // Green
+        'WEALTH': { key: 'gdp',    color: '#22d3ee', scale: 500 },  // Blue
+        'CARBON': { key: 'co2',    color: '#f87171', scale: 200 }   // Red
+    };
+
+    const config = MODE_CONFIG[mode] || MODE_CONFIG['ENERGY'];
     const pointsData = [];
     
-    // STRICT TYPING FIX: explicit type definition
     const LOCATIONS: Record<string, { lat: number; lng: number }> = {
       'USA': { lat: 39.8, lng: -98.5 },
       'CHN': { lat: 35.8, lng: 104.1 },
@@ -53,38 +81,41 @@ export default function GlobeViz() {
       'RUS': { lat: 61.5, lng: 105.3 }
     };
 
+    // --- DATA PROCESSING LOOP ---
     for (const [code, loc] of Object.entries(LOCATIONS)) {
         const countryData = data[code] || data[code.toLowerCase()];
-        if(countryData && countryData['energy']) {
+        
+        if(countryData && countryData[config.key]) {
             let val = 0;
-            // Handle both history arrays and single values
-            if(Array.isArray(countryData['energy'])) {
-                const arr = countryData['energy'];
-                if(arr.length > 0) val = arr[arr.length - 1].value;
-            } else if (countryData['energy'].value) {
-                val = countryData['energy'].value;
+            const metricData = countryData[config.key];
+
+            // Handle Array (Time Series) vs Single Object
+            if(Array.isArray(metricData)) {
+                // Find the specific year
+                const yearEntry = metricData.find((d: any) => d.date == year.toString());
+                if (yearEntry) val = yearEntry.value;
+            } else if (metricData.value) {
+                val = metricData.value;
             }
             
-            pointsData.push({
-                lat: loc.lat, 
-                lng: loc.lng,
-                size: val / 6000, 
-                color: '#34d399'
-            });
+            // Only add if we have a value
+            if (val > 0) {
+                pointsData.push({
+                    lat: loc.lat, 
+                    lng: loc.lng,
+                    size: val / config.scale, 
+                    color: config.color
+                });
+            }
         }
     }
-    world.pointsData(pointsData);
 
-    const handleResize = () => {
-       world.width(window.innerWidth);
-       world.height(window.innerHeight);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Update the globe efficiently
+    globeInstance.current.pointsData(pointsData);
 
-  }, [mounted, data]);
+  }, [data, year, mode]); // <--- This dependency array is the magic
 
-  if (!mounted) return <div className="text-white p-10">Initializing 3D Engine...</div>;
+  if (!mounted) return <div className="absolute top-1/2 left-1/2 -translate-x-1/2 text-emerald-500">Loading Core...</div>;
 
   return <div ref={globeEl} className="absolute inset-0 z-0" />;
 }
