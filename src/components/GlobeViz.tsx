@@ -23,8 +23,8 @@ export default function GlobeViz() {
   // 2. Initialize Globe
   useEffect(() => {
     if (!mounted || !globeEl.current || !data) return;
-
-    const world = Globe()(globeEl.current)
+// @ts-ignore
+      const world = Globe()(globeEl.current)
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
       .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
