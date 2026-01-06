@@ -6,35 +6,33 @@ import Globe from 'globe.gl';
 type GlobeProps = {
   year: number;
   mode: string;
-  data: any; // <--- Now accepts clean data from the main page
+  data: any;
 };
 
 export default function GlobeViz({ year, mode, data }: GlobeProps) {
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
-  const [mounted, setMounted] = useState(false);
 
-  // 1. Initialize Globe (Visuals Only)
   useEffect(() => {
-    setMounted(true);
     if (!globeEl.current) return;
 
+    // 1. SIMPLE RENDERER (No heavy effects)
     // @ts-ignore
     const world = Globe()(globeEl.current)
+      .backgroundColor('#000000') // Force Black Background here
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-      .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .width(window.innerWidth)
       .height(window.innerHeight)
-      .pointAltitude((d: any) => d.size * 0.5)
-      .pointRadius(1.2)
-      .pointColor('color')
-      .pointsMerge(true);
+      .pointAltitude(0.1) // Lower altitude to prevent glitching
+      .pointRadius(0.5);
 
+    // 2. Add Controls
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.5;
+    
     globeInstance.current = world;
 
+    // 3. Handle Window Resize
     const handleResize = () => {
        world.width(window.innerWidth);
        world.height(window.innerHeight);
@@ -43,51 +41,42 @@ export default function GlobeViz({ year, mode, data }: GlobeProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 2. React to Data Changes
+  // 4. Update Data Safely
   useEffect(() => {
     if (!globeInstance.current || !data) return;
 
-    const MODE_CONFIG: any = {
-        'ENERGY': { key: 'energy', color: '#34d399', scale: 6000 },
-        'WEALTH': { key: 'gdp',    color: '#22d3ee', scale: 500 },
-        'CARBON': { key: 'co2',    color: '#f87171', scale: 200 }
+    const config = { 
+        color: mode === 'CARBON' ? '#ef4444' : mode === 'WEALTH' ? '#06b6d4' : '#10b981',
+        scale: mode === 'ENERGY' ? 6000 : 500
     };
 
-    const config = MODE_CONFIG[mode] || MODE_CONFIG['ENERGY'];
     const pointsData = [];
-    
-    // Coordinates Map
+    // Simple Coordinate Map
     const LOCATIONS: Record<string, { lat: number; lng: number }> = {
-      'USA': { lat: 39.8, lng: -98.5 },
-      'CHN': { lat: 35.8, lng: 104.1 },
-      'IND': { lat: 20.5, lng: 78.9 },
-      'BRA': { lat: -14.2, lng: -51.9 },
-      'NGA': { lat: 9.0, lng: 8.6 },
-      'EUU': { lat: 54.5, lng: 15.2 },
-      'DEU': { lat: 51.1, lng: 10.4 },
-      'RUS': { lat: 61.5, lng: 105.3 }
+      'USA': { lat: 39.8, lng: -98.5 }, 'CHN': { lat: 35.8, lng: 104.1 },
+      'IND': { lat: 20.5, lng: 78.9 }, 'BRA': { lat: -14.2, lng: -51.9 },
+      'NGA': { lat: 9.0, lng: 8.6 }, 'DEU': { lat: 51.1, lng: 10.4 },
+      'RUS': { lat: 61.5, lng: 105.3 }, 'JPN': { lat: 36.2, lng: 138.2 },
+      'GBR': { lat: 55.3, lng: -3.4 }
     };
 
-    // Loop through our clean dictionary
-    for (const [code, countryData] of Object.entries(data) as any) {
-        // Match country code (USA) to Location
-        const loc = LOCATIONS[code.toUpperCase()];
-        if (loc && countryData[config.key]) {
-            let val = 0;
-            const metricData = countryData[config.key];
-
-            if(Array.isArray(metricData)) {
-                const yearEntry = metricData.find((d: any) => parseInt(d.date) === year);
-                if (yearEntry) val = parseFloat(yearEntry.value);
-            } else if (metricData.value) {
-                val = parseFloat(metricData.value);
+    // Safe Data Loop
+    for (const [key, val] of Object.entries(data) as any) {
+        const countryCode = key.toUpperCase();
+        if (LOCATIONS[countryCode]) {
+            // Check if data exists for this mode
+            let value = 0;
+            // Handle "Demo Data" structure vs "Real Data"
+            const metrics = val.energy || val.gdp || val.co2; // Fallback
+            if (Array.isArray(metrics)) {
+                value = parseFloat(metrics[0]?.value || 0);
             }
             
-            if (val > 0) {
+            if (value > 0) {
                 pointsData.push({
-                    lat: loc.lat, 
-                    lng: loc.lng,
-                    size: val / config.scale, 
+                    lat: LOCATIONS[countryCode].lat,
+                    lng: LOCATIONS[countryCode].lng,
+                    size: value / config.scale,
                     color: config.color
                 });
             }
@@ -96,6 +85,5 @@ export default function GlobeViz({ year, mode, data }: GlobeProps) {
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
-  if (!mounted) return <div className="text-emerald-500">Initializing...</div>;
-  return <div ref={globeEl} className="absolute inset-0 z-0" />;
+  return <div ref={globeEl} className="fixed top-0 left-0 w-full h-full -z-10" />;
 }
