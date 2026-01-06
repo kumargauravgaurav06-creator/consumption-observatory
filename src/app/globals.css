@@ -3,29 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 5, 5, 5;
+  --font-space: 'Space Grotesk', monospace;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
-    rgb(var(--background-start-rgb));
-  font-family: var(--font-space), monospace; /* Forces the sci-fi font */
-  overflow: hidden;
+  background-color: #050505; /* Deep Void Black */
+  color: #fff;
 }
 
-/* --- GLASS PANELS --- */
+/* --- THE MIRACLE GLASS EFFECT --- */
 .glass-panel {
-  background: rgba(5, 5, 5, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(52, 211, 153, 0.2);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  background: rgba(10, 10, 10, 0.6); /* Semi-transparent dark */
+  backdrop-filter: blur(16px);       /* Heavy frosted glass blur */
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(52, 211, 153, 0.15); /* Subtle Emerald Border */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); /* Deep shadow */
 }
 
-/* --- GLOW EFFECTS --- */
+/* --- NEON TEXT GLOW --- */
 .text-shadow-glow {
-  text-shadow: 0 0 15px rgba(52, 211, 153, 0.6);
+  text-shadow: 0 0 20px rgba(52, 211, 153, 0.6);
+}
+
+/* --- SLIDER STYLING --- */
+input[type=range] {
+  -webkit-appearance: none;
+  background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-top: -6px;
+  box-shadow: 0 0 10px #10b981;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: #334155;
+  border-radius: 2px;
 }
