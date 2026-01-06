@@ -3,89 +3,138 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useMemo } from 'react';
 
+// Lazy Load the Globe
 const GlobeViz = dynamic(() => import('../components/GlobeViz'), { ssr: false });
 
 export default function Home() {
-  const [year, setYear] = useState(2022);
+  const [year, setYear] = useState(2020); // Set to 2020 (safer, often has more data than 2023)
   const [activeMode, setActiveMode] = useState('ENERGY');
   const [data, setData] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
 
-  // HELPER: Add to on-screen log
-  const log = (msg: string) => setDebugLog(prev => [...prev, `> ${msg}`]);
+  const log = (msg: string) => setDebugLog(prev => [...prev, `> ${msg}`].slice(-5)); // Keep last 5 lines
 
   useEffect(() => {
-    log("System Initialized. Attempting to fetch data...");
+    log("Fetching data...");
     
-    // Add timestamp to force fresh load (bypasses cache)
-    fetch('/global_data.json?v=' + Date.now())
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-        return res.json();
-      })
+    fetch('/global_data.json')
+      .then(res => res.json())
       .then(json => {
-        log("File Downloaded.");
-        const realData = json.data || json;
-        setData(realData);
+        let rawData = json.data || json;
         
-        // ANALYZE DATA STRUCTURE
-        const keys = Object.keys(realData);
-        log(`Found ${keys.length} countries.`);
-        log(`First 3 Keys: ${keys.slice(0, 3).join(', ')}`);
+        // --- THE UNIVERSAL ADAPTER (Fixes the "N/A" issue) ---
+        if (Array.isArray(rawData)) {
+            log("⚠️ List detected. Converting to Dictionary...");
+            const map: any = {};
+            rawData.forEach((item: any) => {
+                // Try to find the country name or code
+                const key = item.iso_code || item.code || item.country || item.name || item.id;
+                if (key) {
+                    map[key.toUpperCase()] = item; // Force Uppercase (USA)
+                }
+            });
+            rawData = map;
+        }
         
-        // Check USA specifically
-        if (realData['USA']) log("✅ Found 'USA' (Uppercase)");
-        else if (realData['usa']) log("⚠️ Found 'usa' (Lowercase)");
-        else log("❌ USA not found in keys!");
+        setData(rawData);
+        const keys = Object.keys(rawData);
+        log(`✅ Data Ready. Loaded ${keys.length} countries.`);
+        if (keys.includes('USA')) log("Target 'USA' acquired.");
       })
-      .catch(err => {
-        log(`CRITICAL FAILURE: ${err.message}`);
-      });
+      .catch(err => log(`Error: ${err.message}`));
   }, []);
 
-  // --- CALCULATION LOGIC ---
+  // --- CALCULATION ENGINE ---
   const targetValue = useMemo(() => {
     if (!data) return "---";
-    // Try both cases
-    const country = data['USA'] || data['usa'];
+    const country = data['USA']; // We forced it to uppercase above
     if (!country) return "No Data";
     
     const key = activeMode === 'ENERGY' ? 'energy' : activeMode === 'WEALTH' ? 'gdp' : 'co2';
     const unit = activeMode === 'ENERGY' ? 'kWh' : activeMode === 'WEALTH' ? 'USD' : 'Mt';
     
-    // Check if metric exists
-    if (!country[key]) return `No ${key}`;
-    
+    // Handle different data structures (Array of years vs Single Object)
     const records = country[key];
-    const entry = Array.isArray(records) ? records.find((r: any) => parseInt(r.date) === year) : null;
-    return entry ? `${parseFloat(entry.value).toLocaleString()} ${unit}` : "N/A";
+    if (!records) return "N/A";
+
+    let val = 0;
+    if (Array.isArray(records)) {
+        // Find specific year
+        const entry = records.find((r: any) => parseInt(r.date) === year);
+        if (entry) val = parseFloat(entry.value);
+    } else if (typeof records === 'object' && records.value) {
+        val = parseFloat(records.value);
+    }
+
+    return val > 0 ? `${val.toLocaleString()} ${unit}` : "N/A";
+  }, [data, year, activeMode]);
+
+  // --- LEADERBOARD ENGINE ---
+  const leaders = useMemo(() => {
+    if (!data) return [];
+    const key = activeMode === 'ENERGY' ? 'energy' : activeMode === 'WEALTH' ? 'gdp' : 'co2';
+    
+    return Object.keys(data).map(code => {
+        const country = data[code];
+        const records = country[key];
+        let val = 0;
+        
+        if (Array.isArray(records)) {
+             const entry = records.find((r: any) => parseInt(r.date) === year);
+             if (entry) val = parseFloat(entry.value);
+        }
+        return { name: code, value: val };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5) // Top 5
+    .filter(item => item.value > 0);
   }, [data, year, activeMode]);
 
   return (
-    <main className="relative w-full h-screen bg-black overflow-hidden font-sans text-white">
+    <main className="relative w-full h-screen bg-black overflow-hidden font-sans text-white select-none">
       
-      {/* --- NORMAL UI --- */}
+      {/* HEADER */}
       <div className="absolute top-0 left-0 w-full z-50 p-4 flex justify-between pointer-events-none">
-        <h1 className="text-2xl font-bold text-emerald-400 pointer-events-auto">PULSE.IO <span className="text-[10px] text-white/50">DIAGNOSTIC MODE</span></h1>
-        <div className="pointer-events-auto flex gap-2">
+        <h1 className="text-2xl font-bold text-emerald-400 pointer-events-auto tracking-wider">PULSE.IO</h1>
+        <div className="pointer-events-auto flex gap-2 bg-black/50 p-1 rounded-lg backdrop-blur-md">
             {['ENERGY', 'WEALTH', 'CARBON'].map(m => (
-                <button key={m} onClick={() => setActiveMode(m)} className={`px-3 py-1 text-xs font-bold rounded ${activeMode === m ? 'bg-emerald-500 text-black' : 'bg-white/10'}`}>{m}</button>
+                <button key={m} onClick={() => setActiveMode(m)} className={`px-4 py-1 text-[10px] font-bold rounded tracking-widest transition-all ${activeMode === m ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'text-slate-400 hover:text-white'}`}>{m}</button>
             ))}
         </div>
       </div>
 
-      <div className="absolute top-24 left-4 z-40 p-6 glass-panel rounded-xl w-64 border border-emerald-500/30 bg-black/80">
-        <h2 className="text-4xl font-bold mb-2">USA</h2>
-        <div className="text-2xl font-mono text-emerald-400">{targetValue}</div>
-        <div className="text-xs text-slate-500 mt-1">YEAR: {year}</div>
+      {/* LEFT PANEL */}
+      <div className="absolute top-24 left-4 z-40 p-6 glass-panel rounded-2xl w-72 border border-emerald-500/20 bg-black/60 backdrop-blur-xl transition-all hover:border-emerald-500/50">
+        <div className="flex justify-between items-center mb-4">
+            <span className="text-[10px] text-emerald-500 uppercase tracking-widest">Target Locked</span>
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
+        </div>
+        <h2 className="text-5xl font-bold mb-2 text-white">USA</h2>
+        <div className="text-3xl font-mono text-emerald-400 text-shadow-glow mt-4">{targetValue}</div>
+        <div className="text-xs text-slate-500 mt-2 uppercase tracking-wider">Metric: {activeMode}</div>
       </div>
 
-      {/* --- DEBUG CONSOLE (The Fixer) --- */}
-      <div className="absolute bottom-0 left-0 w-full h-48 bg-black/90 border-t border-emerald-500/50 p-4 font-mono text-xs overflow-y-auto z-[60]">
-        <h3 className="text-emerald-500 font-bold mb-2">/// SYSTEM DIAGNOSTICS ///</h3>
-        {debugLog.map((line, i) => (
-            <div key={i} className="mb-1 border-b border-white/5 pb-1">{line}</div>
-        ))}
+      {/* RIGHT PANEL (Leaderboard) */}
+      <div className="absolute top-24 right-4 z-40 p-6 glass-panel rounded-2xl w-64 border border-white/10 bg-black/60 backdrop-blur-xl">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Top Leaders ({year})</h3>
+        <div className="space-y-3">
+            {leaders.map((item, i) => (
+                <div key={item.name} className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300"><span className="text-slate-600 mr-2 font-mono">0{i+1}</span>{item.name}</span>
+                    <span className="text-emerald-400 font-mono">{Math.round(item.value).toLocaleString()}</span>
+                </div>
+            ))}
+        </div>
+      </div>
+
+      {/* TIMELINE */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-40 pointer-events-auto">
+        <div className="glass-panel p-4 rounded-full flex items-center gap-4 bg-black/80 border border-white/10 shadow-2xl">
+           <div className="font-mono text-xl font-bold text-emerald-400 w-16 text-center">{year}</div>
+           <input type="range" min="2000" max="2022" value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"/>
+        </div>
+        {/* Debug Log (Tiny) */}
+        <div className="mt-2 text-[10px] text-emerald-500/50 font-mono text-center">{debugLog[debugLog.length-1]}</div>
       </div>
 
       <GlobeViz year={year} mode={activeMode} />
