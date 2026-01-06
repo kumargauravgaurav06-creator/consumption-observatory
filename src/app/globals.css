@@ -5,38 +5,27 @@
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  --background-end-rgb: 5, 5, 5;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
     rgb(var(--background-start-rgb));
-  overflow: hidden; /* No scrollbars for the dashboard feel */
+  font-family: var(--font-space), monospace; /* Forces the sci-fi font */
+  overflow: hidden;
 }
 
 /* --- GLASS PANELS --- */
 .glass-panel {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(5, 5, 5, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(52, 211, 153, 0.2); /* Emerald Tint */
+  border: 1px solid rgba(52, 211, 153, 0.2);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* --- GLOW EFFECTS --- */
 .text-shadow-glow {
   text-shadow: 0 0 15px rgba(52, 211, 153, 0.6);
-}
-
-/* Custom Scrollbar just in case */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #000;
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
 }
