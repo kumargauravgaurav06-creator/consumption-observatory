@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
-import "./globals.css"; // <--- THIS IS THE MAGIC WIRE
+import "./globals.css";  // <--- THIS IS THE MISSING WIRE. IT TURNS THE LIGHTS ON.
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
 
@@ -16,7 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={spaceGrotesk.className}>{children}</body>
+      <body className={`${spaceGrotesk.className} antialiased bg-black text-white overflow-hidden`}>
+        {children}
+      </body>
     </html>
   );
 }
