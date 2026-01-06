@@ -1,13 +1,12 @@
-// Force CSS Load
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
-import "./globals.css";
+import "./globals.css"; // <--- THIS IS THE MAGIC WIRE
 
-const space = Space_Grotesk({ subsets: ["latin"], variable: '--font-space-grotesk' });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
 
 export const metadata: Metadata = {
   title: "PULSE.IO | Global Intelligence",
-  description: "Enterprise-grade consumption analytics platform.",
+  description: "Temporal Analytics Engine",
 };
 
 export default function RootLayout({
@@ -17,9 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${space.variable} bg-black text-white antialiased overflow-hidden`}>
-        {children}
-      </body>
+      <body className={spaceGrotesk.className}>{children}</body>
     </html>
   );
 }
