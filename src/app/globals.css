@@ -7,21 +7,15 @@
 }
 
 body {
-  background-color: #000000; /* Pure Black */
+  background-color: #000000;
   color: #ffffff;
-  overflow: hidden; /* Prevents scrollbars from breaking the 3D canvas */
+  overflow: hidden;
 }
 
-/* Ensure the canvas sits behind everything */
-canvas {
-  outline: none;
-  z-index: 1 !important; /* Low Z-Index */
-}
-
-/* High visibility for UI panels */
+/* Ensure the UI sits ON TOP of the globe */
 .glass-panel {
-  background: rgba(0, 0, 0, 0.85); /* Darker for better contrast */
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  z-index: 50; /* High Z-Index */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 50;
 }
