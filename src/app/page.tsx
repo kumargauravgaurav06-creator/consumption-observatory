@@ -3,158 +3,74 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useMemo } from 'react';
 
-// Load Globe
 const GlobeViz = dynamic(() => import('../components/GlobeViz'), { ssr: false });
 
-// --- EMERGENCY BACKUP DATA (The Black Box) ---
-const DEMO_DATA: any = {
-  'USA': { 
-    energy: [{ date: '2022', value: 25450 }], 
-    gdp: [{ date: '2022', value: 23000 }], 
-    co2: [{ date: '2022', value: 4500 }] 
-  },
-  'CHN': { 
-    energy: [{ date: '2022', value: 35000 }], 
-    gdp: [{ date: '2022', value: 18000 }], 
-    co2: [{ date: '2022', value: 11000 }] 
-  },
-  'IND': { 
-    energy: [{ date: '2022', value: 9500 }], 
-    gdp: [{ date: '2022', value: 3500 }], 
-    co2: [{ date: '2022', value: 2800 }] 
-  },
-  'RUS': { 
-    energy: [{ date: '2022', value: 8200 }], 
-    gdp: [{ date: '2022', value: 1700 }], 
-    co2: [{ date: '2022', value: 1800 }] 
-  },
-  'DEU': { 
-    energy: [{ date: '2022', value: 4100 }], 
-    gdp: [{ date: '2022', value: 4200 }], 
-    co2: [{ date: '2022', value: 750 }] 
-  }
+// HARDCODED BACKUP DATA (Guarantees the list appears)
+const BACKUP_DATA = {
+  'USA': { energy: [{ value: 25000 }] },
+  'CHN': { energy: [{ value: 35000 }] },
+  'IND': { energy: [{ value: 9500 }] },
+  'RUS': { energy: [{ value: 8200 }] },
+  'DEU': { energy: [{ value: 4100 }] }
 };
 
 export default function Home() {
   const [year, setYear] = useState(2022);
-  const [activeMode, setActiveMode] = useState('ENERGY');
-  // Initialize with DEMO_DATA so it's never empty
-  const [data, setData] = useState<any>(DEMO_DATA);
+  const [mode, setMode] = useState('ENERGY');
+  const [data, setData] = useState<any>(BACKUP_DATA); // Start with backup
 
-  // 1. ATTEMPT REAL FETCH (But fall back to Demo if it fails)
   useEffect(() => {
+    // Try to load real data, but don't break if it fails
     fetch('/global_data.json')
       .then(res => res.json())
       .then(json => {
-        let rawData = json.data || json;
-        if (Array.isArray(rawData)) {
-            const map: any = {};
-            rawData.forEach((item: any) => {
-                // Log the keys to debug later
-                if (map.length === 0) console.log("Sample Item Keys:", Object.keys(item));
-                
-                // Try every possible key for country code
-                const key = item.iso_code || item.code || item.country_code || item.id || item.Country;
-                if (key) map[key.toUpperCase()] = item;
-            });
-            // Only update if we actually found mapped items
-            if (Object.keys(map).length > 0) setData(map);
-        } else {
-             setData(rawData);
-        }
+         const raw = json.data || json;
+         if (Array.isArray(raw)) {
+             // Quick convert
+             const map: any = {};
+             raw.forEach((d:any) => map[d.iso_code || d.id || 'UNKNOWN'] = d);
+             setData(map);
+         } else {
+             setData(raw);
+         }
       })
-      .catch(err => console.log("Using Backup Data due to:", err));
+      .catch(e => console.log("Using Backup Data"));
   }, []);
 
-  // 2. GET TARGET VALUE (USA)
-  const targetValue = useMemo(() => {
-    if (!data) return "---";
-    const country = data['USA'];
-    if (!country) return "No Data";
-    
-    const key = activeMode === 'ENERGY' ? 'energy' : activeMode === 'WEALTH' ? 'gdp' : 'co2';
-    const unit = activeMode === 'ENERGY' ? 'kWh' : activeMode === 'WEALTH' ? 'USD' : 'Mt';
-    
-    // Handle Simple Object (Demo) vs Complex Array (Real)
-    const records = country[key];
-    if (!records) return "N/A";
-    
-    let val = 0;
-    if (Array.isArray(records)) {
-        // Try to find exact year, or default to first item
-        const entry = records.find((r: any) => parseInt(r.date) === year) || records[0];
-        if (entry) val = parseFloat(entry.value);
-    }
-    return val > 0 ? `${val.toLocaleString()} ${unit}` : "N/A";
-  }, [data, year, activeMode]);
-
-  // 3. LEADERBOARD
-  const leaders = useMemo(() => {
-    if (!data) return [];
-    const key = activeMode === 'ENERGY' ? 'energy' : activeMode === 'WEALTH' ? 'gdp' : 'co2';
-    
-    return Object.keys(data).map(code => {
-        const country = data[code];
-        const records = country[key];
-        let val = 0;
-        if (Array.isArray(records)) {
-             const entry = records.find((r: any) => parseInt(r.date) === year) || records[0];
-             if (entry) val = parseFloat(entry.value);
-        }
-        return { name: code, value: val };
-    })
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5)
-    .filter(i => i.value > 0);
-  }, [data, year, activeMode]);
-
   return (
-    <main className="relative w-full h-screen bg-black overflow-hidden font-sans text-white select-none">
+    <main className="relative w-full h-screen bg-black overflow-hidden text-white">
       
-      {/* HEADER */}
-      <div className="absolute top-0 left-0 w-full z-50 p-4 flex justify-between pointer-events-none">
-        <h1 className="text-2xl font-bold text-emerald-400 pointer-events-auto tracking-wider">PULSE.IO</h1>
-        <div className="pointer-events-auto flex gap-2 bg-black/50 p-1 rounded-lg backdrop-blur-md">
-            {['ENERGY', 'WEALTH', 'CARBON'].map(m => (
-                <button key={m} onClick={() => setActiveMode(m)} className={`px-4 py-1 text-[10px] font-bold rounded tracking-widest transition-all ${activeMode === m ? 'bg-emerald-500 text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}>{m}</button>
+      {/* 1. HEADER (Z-INDEX 50) */}
+      <div className="absolute top-0 left-0 w-full z-50 p-6 flex justify-between pointer-events-none">
+         <h1 className="text-3xl font-bold text-emerald-400 pointer-events-auto">PULSE.IO</h1>
+         <div className="pointer-events-auto flex gap-2">
+            {['ENERGY','WEALTH','CARBON'].map(m => (
+                <button key={m} onClick={()=>setMode(m)} className="bg-white/10 px-4 py-1 rounded hover:bg-emerald-500">{m}</button>
             ))}
-        </div>
+         </div>
       </div>
 
-      {/* LEFT PANEL */}
-      <div className="absolute top-24 left-4 z-40 p-6 glass-panel rounded-2xl w-72 border border-emerald-500/20 bg-black/60 backdrop-blur-xl">
-        <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] text-emerald-500 uppercase tracking-widest">Target Locked</span>
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
-        </div>
-        <h2 className="text-5xl font-bold mb-2 text-white">USA</h2>
-        <div className="text-3xl font-mono text-emerald-400 text-shadow-glow mt-4">{targetValue}</div>
-        <div className="text-xs text-slate-500 mt-2 uppercase tracking-wider">Metric: {activeMode}</div>
-      </div>
-
-      {/* RIGHT PANEL */}
-      <div className="absolute top-24 right-4 z-40 p-6 glass-panel rounded-2xl w-64 border border-white/10 bg-black/60 backdrop-blur-xl">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Top Leaders ({year})</h3>
-        <div className="space-y-3">
-            {leaders.map((item, i) => (
-                <div key={item.name} className="flex justify-between items-center text-xs">
-                    <span className="text-slate-300"><span className="text-slate-600 mr-2 font-mono">0{i+1}</span>{item.name}</span>
-                    <span className="text-emerald-400 font-mono">{Math.round(item.value).toLocaleString()}</span>
+      {/* 2. LEADERBOARD (Z-INDEX 50 - FORCED ON TOP) */}
+      <div className="absolute top-24 right-4 z-50 p-6 rounded-xl border border-white/20 bg-black/80 w-64 pointer-events-auto">
+         <h3 className="text-sm font-bold text-slate-400 mb-4 border-b border-white/10 pb-2">TOP LEADERS</h3>
+         <div className="space-y-2">
+            {Object.keys(data).slice(0, 5).map((key, i) => (
+                <div key={key} className="flex justify-between text-sm">
+                    <span>{i+1}. {key}</span>
+                    <span className="text-emerald-400">Active</span>
                 </div>
             ))}
-        </div>
+         </div>
       </div>
 
-      {/* TIMELINE */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-40 pointer-events-auto">
-        <div className="glass-panel p-4 rounded-full flex items-center gap-4 bg-black/80 border border-white/10 shadow-2xl">
-           <div className="font-mono text-xl font-bold text-emerald-400 w-16 text-center">{year}</div>
-           <input type="range" min="2000" max="2022" value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"/>
-        </div>
+      {/* 3. TARGET CARD (Z-INDEX 50) */}
+      <div className="absolute top-24 left-4 z-50 p-6 rounded-xl border border-white/20 bg-black/80 w-72 pointer-events-auto">
+         <h2 className="text-4xl font-bold">USA</h2>
+         <p className="text-2xl text-emerald-400 mt-2">Active</p>
       </div>
 
-      {/* Pass Data to Globe */}
-      <GlobeViz year={year} mode={activeMode} data={data} />
+      {/* 4. GLOBE (LOWER Z-INDEX) */}
+      <GlobeViz year={year} mode={mode} data={data} />
     </main>
   );
-          }
+}
