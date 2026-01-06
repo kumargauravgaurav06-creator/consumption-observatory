@@ -3,44 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 
-// Define the shape of the data we expect
 type GlobeProps = {
-  year?: number;
-  mode?: string;
+  year: number;
+  mode: string;
+  data: any; // <--- Now accepts clean data from the main page
 };
 
-export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
+export default function GlobeViz({ year, mode, data }: GlobeProps) {
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
-  const [data, setData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Load Data (Using Direct Raw Link to fix 404s)
+  // 1. Initialize Globe (Visuals Only)
   useEffect(() => {
     setMounted(true);
-    // fetching directly from your main branch to ensure data loads
-    fetch('https://raw.githubusercontent.com/kumargauravgaurav06-creator/consumption-observatory/main/public/global_data.json')
-      .then((res) => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then((json) => {
-        console.log("Data Loaded Successfully:", json);
-        setData(json.data || json);
-      })
-      .catch((err) => {
-        console.error("Data Load Error:", err);
-        // Fallback to local if remote fails
-        fetch('/global_data.json')
-            .then(res => res.json())
-            .then(json => setData(json.data || json))
-            .catch(e => console.error("Fallback Error:", e));
-      });
-  }, []);
-
-  // 2. Initialize Globe
-  useEffect(() => {
-    if (!mounted || !globeEl.current) return;
+    if (!globeEl.current) return;
 
     // @ts-ignore
     const world = Globe()(globeEl.current)
@@ -64,9 +41,9 @@ export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [mounted]);
+  }, []);
 
-  // 3. Update Globe on Change
+  // 2. React to Data Changes
   useEffect(() => {
     if (!globeInstance.current || !data) return;
 
@@ -79,6 +56,7 @@ export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
     const config = MODE_CONFIG[mode] || MODE_CONFIG['ENERGY'];
     const pointsData = [];
     
+    // Coordinates Map
     const LOCATIONS: Record<string, { lat: number; lng: number }> = {
       'USA': { lat: 39.8, lng: -98.5 },
       'CHN': { lat: 35.8, lng: 104.1 },
@@ -90,16 +68,19 @@ export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
       'RUS': { lat: 61.5, lng: 105.3 }
     };
 
-    for (const [code, loc] of Object.entries(LOCATIONS)) {
-        const countryData = data[code] || data[code.toLowerCase()];
-        if(countryData && countryData[config.key]) {
+    // Loop through our clean dictionary
+    for (const [code, countryData] of Object.entries(data) as any) {
+        // Match country code (USA) to Location
+        const loc = LOCATIONS[code.toUpperCase()];
+        if (loc && countryData[config.key]) {
             let val = 0;
             const metricData = countryData[config.key];
+
             if(Array.isArray(metricData)) {
-                const yearEntry = metricData.find((d: any) => d.date == year.toString());
-                if (yearEntry) val = yearEntry.value;
+                const yearEntry = metricData.find((d: any) => parseInt(d.date) === year);
+                if (yearEntry) val = parseFloat(yearEntry.value);
             } else if (metricData.value) {
-                val = metricData.value;
+                val = parseFloat(metricData.value);
             }
             
             if (val > 0) {
@@ -115,6 +96,6 @@ export default function GlobeViz({ year = 2023, mode = 'ENERGY' }: GlobeProps) {
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
-  if (!mounted) return <div className="text-emerald-500">Loading Core...</div>;
+  if (!mounted) return <div className="text-emerald-500">Initializing...</div>;
   return <div ref={globeEl} className="absolute inset-0 z-0" />;
 }
