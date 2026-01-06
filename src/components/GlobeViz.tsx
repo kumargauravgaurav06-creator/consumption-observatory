@@ -61,7 +61,6 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     const config = { 
         color: mode === 'CARBON' ? '#ef4444' : mode === 'WEALTH' ? '#06b6d4' : '#10b981',
         scale: mode === 'ENERGY' ? 60000 : mode === 'WEALTH' ? 80000 : 50 
-        // Note: Increased divisors to shrink bars naturally
     };
 
     const pointsData = [];
@@ -82,7 +81,7 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
                 // CLAMP MAX HEIGHT TO 0.5 (Half Earth Radius)
                 let altitude = value / config.scale;
                 if (altitude > 0.5) altitude = 0.5; 
-                if (altitude < 0.01) altitude = 0.01; // Minimum visibility
+                if (altitude < 0.01) altitude = 0.01;
 
                 pointsData.push({
                     lat: LOCATIONS[countryCode].lat,
@@ -96,6 +95,7 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
+  // CAMERA FLIGHT
   useEffect(() => {
       if (!globeInstance.current || !target) return;
       const loc = LOCATIONS[target];
