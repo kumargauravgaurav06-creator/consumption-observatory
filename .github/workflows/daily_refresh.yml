@@ -1,0 +1,37 @@
+name: Daily Data Refresh
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every day at Midnight UTC
+  workflow_dispatch:      # Allows manual click to test
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Crawler Robot
+      run: python fetch_data.py
+
+    - name: Commit and Push Changes
+      run: |
+        git config --global user.name 'Temporal Bot'
+        git config --global user.email 'bot@noreply.github.com'
+        git add public/global_data.json
+        git commit -m "🤖 Auto-Update: Global Data Refresh" || exit 0
+        git push
