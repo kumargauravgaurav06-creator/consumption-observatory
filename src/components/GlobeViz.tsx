@@ -8,9 +8,10 @@ type GlobeProps = {
   mode: string;
   data: any;
   target?: string;
+  onCountryClick: (code: string) => void; // NEW: Callback when user clicks globe
 };
 
-export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
+export default function GlobeViz({ year, mode, data, target, onCountryClick }: GlobeProps) {
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
 
@@ -28,7 +29,11 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     'KWT': { lat: 29.3, lng: 47.4 }, 'QAT': { lat: 25.3, lng: 51.1 },
     'ARE': { lat: 23.4, lng: 53.8 }, 'BHR': { lat: 26.0, lng: 50.5 },
     'SWE': { lat: 60.1, lng: 18.6 }, 'FIN': { lat: 61.9, lng: 25.7 },
-    'DNK': { lat: 56.2, lng: 9.5 }, 'ESP': { lat: 40.4, lng: -3.7 }
+    'DNK': { lat: 56.2, lng: 9.5 }, 'ESP': { lat: 40.4, lng: -3.7 },
+    'MEX': { lat: 23.6, lng: -102.5 }, 'TUR': { lat: 38.9, lng: 35.2 },
+    'ARG': { lat: -38.4, lng: -63.6 }, 'IRN': { lat: 32.4, lng: 53.6 },
+    'POL': { lat: 51.9, lng: 19.1 }, 'PAK': { lat: 30.3, lng: 69.3 },
+    'THA': { lat: 15.8, lng: 100.9 }, 'VNM': { lat: 14.0, lng: 108.2 }
   };
 
   useEffect(() => {
@@ -41,7 +46,19 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .pointAltitude('size')
-      .pointRadius(0.6);
+      .pointRadius(0.6)
+      // NEW: Hover Tooltip
+      .pointLabel((d: any) => `
+        <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
+          <b>${d.countryName}</b>: ${d.displayValue}
+        </div>
+      `)
+      // NEW: Click Handler
+      .onPointClick((d: any) => {
+        if (onCountryClick) onCountryClick(d.code);
+        // Fly to point immediately on click
+        world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 2.0 }, 1000);
+      });
 
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.3;
@@ -53,28 +70,35 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, []); // Run once on mount
+
+  // NEW: Update click handler ref when prop changes
+  useEffect(() => {
+    if (globeInstance.current) {
+        globeInstance.current.onPointClick((d: any) => {
+            if (onCountryClick) onCountryClick(d.code);
+            globeInstance.current.pointOfView({ lat: d.lat, lng: d.lng, altitude: 2.0 }, 1000);
+        });
+    }
+  }, [onCountryClick]);
+
 
   useEffect(() => {
     if (!globeInstance.current || !data) return;
 
-    // --- VISUAL CONFIGURATION ---
-    // Key: Matches 'mode' from page.tsx
-    // Scale: Higher number = Shorter bars (Value / Scale)
     const configs: any = { 
         'ENERGY':      { color: '#10b981', scale: 60000 },
         'WEALTH':      { color: '#06b6d4', scale: 80000 },
         'CARBON':      { color: '#ef4444', scale: 50 },
-        'RENEWABLES':  { color: '#4ade80', scale: 200 }, // % (0-100)
-        'WATER':       { color: '#3b82f6', scale: 200 }, // % (0-100)
-        'INTERNET':    { color: '#a855f7', scale: 200 }, // % (0-100)
-        'LIFE':        { color: '#ec4899', scale: 180 }, // Years (0-90)
-        'INFLATION':   { color: '#f97316', scale: 40 }   // % (Usually 0-20, sometimes 100)
+        'RENEWABLES':  { color: '#4ade80', scale: 200 },
+        'WATER':       { color: '#3b82f6', scale: 200 },
+        'INTERNET':    { color: '#a855f7', scale: 200 },
+        'LIFE':        { color: '#ec4899', scale: 180 },
+        'INFLATION':   { color: '#f97316', scale: 40 }
     };
 
     const config = configs[mode] || configs['ENERGY'];
     
-    // Map mode to data key
     const modeKeys: any = {
         'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2',
         'RENEWABLES': 'renewables', 'WATER': 'water', 
@@ -97,15 +121,15 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
             }
             
             if (value > 0) {
-                // Scaling Logic
                 let altitude = value / config.scale;
-                
-                // Specific clamps
-                if (mode === 'INFLATION' && altitude > 0.8) altitude = 0.8; // Cap hyperinflation
-                if (altitude > 0.5) altitude = 0.5; // General Cap
+                if (mode === 'INFLATION' && altitude > 0.8) altitude = 0.8;
+                if (altitude > 0.5) altitude = 0.5;
                 if (altitude < 0.01) altitude = 0.01;
 
                 pointsData.push({
+                    code: countryCode, // Needed for click ID
+                    countryName: val.country || countryCode, // Needed for Tooltip
+                    displayValue: Math.round(value).toLocaleString(), // Needed for Tooltip
                     lat: LOCATIONS[countryCode].lat,
                     lng: LOCATIONS[countryCode].lng,
                     size: altitude, 
@@ -117,6 +141,7 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
+  // External Target Control (List click)
   useEffect(() => {
       if (!globeInstance.current || !target) return;
       const loc = LOCATIONS[target];
