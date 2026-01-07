@@ -32,7 +32,7 @@ export default function Home() {
   const [mode, setMode] = useState('ENERGY');
   const [data, setData] = useState<any>({});
   const [target, setTarget] = useState<string>('USA'); 
-  const [isPlaying, setIsPlaying] = useState(false); // TIMELAPSE STATE
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // 1. FETCH DATA
   useEffect(() => {
@@ -49,13 +49,14 @@ export default function Home() {
       .catch(e => console.log("Fetch Error"));
   }, []);
 
-  // 2. TIMELAPSE ENGINE
+  // 2. TIMELAPSE ENGINE (SLOWED DOWN)
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
       interval = setInterval(() => {
+        // Change year every 1.2 seconds (Was 0.6)
         setYear((prev) => (prev >= 2025 ? 2000 : prev + 1));
-      }, 600); // Speed: 0.6 seconds per year
+      }, 1200); 
     }
     return () => clearInterval(interval);
   }, [isPlaying]);
@@ -148,7 +149,7 @@ export default function Home() {
          <p className="text-[10px] text-slate-500 mt-4 uppercase">Mode: <span className={config.color.replace('bg-', 'text-')}>{config.label}</span></p>
       </div>
 
-      {/* SLIDER CONTROLS (NOW WITH PLAY BUTTON) */}
+      {/* SLIDER CONTROLS */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-50 pointer-events-auto">
         <div className="p-4 rounded-full flex items-center gap-6 bg-black/90 border border-white/20 shadow-2xl backdrop-blur-xl">
             
