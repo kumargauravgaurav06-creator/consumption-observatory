@@ -17,14 +17,35 @@ const METRICS: Record<string, { key: string; unit: string; label: string; color:
   'INFLATION':   { key: 'inflation',   unit: '%',     label: 'Inflation',   color: 'bg-orange-500' }
 };
 
+// MASTER DICTIONARY (Fixes 3-letter codes)
 const COUNTRY_NAMES: Record<string, string> = {
+  // Major Powers & G20
   'USA': 'United States', 'CHN': 'China', 'IND': 'India', 'RUS': 'Russia',
-  'DEU': 'Germany', 'JPN': 'Japan', 'GBR': 'UK', 'FRA': 'France',
+  'DEU': 'Germany', 'JPN': 'Japan', 'GBR': 'United Kingdom', 'FRA': 'France',
   'BRA': 'Brazil', 'ITA': 'Italy', 'CAN': 'Canada', 'KOR': 'South Korea',
-  'AUS': 'Australia', 'ISL': 'Iceland', 'NOR': 'Norway', 'BHR': 'Bahrain',
-  'KWT': 'Kuwait', 'SAU': 'Saudi Arabia', 'QAT': 'Qatar', 'ARE': 'UAE',
-  'NGA': 'Nigeria', 'ZAF': 'South Africa', 'MEX': 'Mexico', 'IDN': 'Indonesia',
-  'ESP': 'Spain', 'SWE': 'Sweden', 'FIN': 'Finland', 'DNK': 'Denmark'
+  'AUS': 'Australia', 'MEX': 'Mexico', 'IDN': 'Indonesia', 'SAU': 'Saudi Arabia',
+  'TUR': 'Turkey', 'ARG': 'Argentina', 'ZAF': 'South Africa',
+
+  // Europe
+  'ESP': 'Spain', 'SWE': 'Sweden', 'FIN': 'Finland', 'DNK': 'Denmark',
+  'NOR': 'Norway', 'ISL': 'Iceland', 'CHE': 'Switzerland', 'IRL': 'Ireland',
+  'AUT': 'Austria', 'BEL': 'Belgium', 'NLD': 'Netherlands', 'LUX': 'Luxembourg',
+  'PRT': 'Portugal', 'POL': 'Poland', 'UKR': 'Ukraine', 'GRC': 'Greece',
+  'CZE': 'Czechia', 'HUN': 'Hungary', 'ROU': 'Romania',
+
+  // Middle East
+  'ARE': 'UAE', 'QAT': 'Qatar', 'KWT': 'Kuwait', 'BHR': 'Bahrain',
+  'OMN': 'Oman', 'ISR': 'Israel', 'IRN': 'Iran', 'IRQ': 'Iraq',
+
+  // Islands & Territories (Top Performers)
+  'BMU': 'Bermuda', 'CYM': 'Cayman Islands', 'SGP': 'Singapore', 'HKG': 'Hong Kong',
+  'MAC': 'Macao', 'FRO': 'Faroe Islands', 'PYF': 'French Polynesia',
+  'GRL': 'Greenland', 'PRI': 'Puerto Rico',
+
+  // Developing & Others
+  'NGA': 'Nigeria', 'EGY': 'Egypt', 'VNM': 'Vietnam', 'THA': 'Thailand',
+  'PAK': 'Pakistan', 'BGD': 'Bangladesh', 'PHL': 'Philippines', 'MYS': 'Malaysia',
+  'COL': 'Colombia', 'CHL': 'Chile', 'PER': 'Peru', 'VEN': 'Venezuela'
 };
 
 export default function Home() {
@@ -49,14 +70,13 @@ export default function Home() {
       .catch(e => console.log("Fetch Error"));
   }, []);
 
-  // 2. TIMELAPSE ENGINE (SLOWED DOWN)
+  // 2. TIMELAPSE ENGINE
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
       interval = setInterval(() => {
-        // Change year every 1.2 seconds (Was 0.6)
         setYear((prev) => (prev >= 2025 ? 2000 : prev + 1));
-      }, 1200); 
+      }, 1200); // 1.2 Seconds per year
     }
     return () => clearInterval(interval);
   }, [isPlaying]);
@@ -135,43 +155,4 @@ export default function Home() {
       </div>
 
       {/* TARGET CARD */}
-      <div className="absolute top-28 left-4 z-50 p-6 rounded-xl border border-white/20 bg-black/80 w-80 pointer-events-auto backdrop-blur-md transition-all shadow-2xl">
-         <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest">Target Locked</span>
-            <div className={`w-2 h-2 rounded-full animate-pulse ${targetData.isEstimated ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-         </div>
-         <h2 className="text-4xl font-bold mb-1 truncate">{displayName}</h2>
-         <div className="mt-4 text-3xl font-mono text-white text-shadow-glow">
-            {targetData.value !== 0 ? targetData.value.toLocaleString() : "---"} 
-            <span className="text-sm text-slate-400 ml-2">{config.unit}</span>
-         </div>
-         {targetData.isEstimated && <div className="mt-2 text-[10px] text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-2 py-1 inline-block rounded">⚠️ Data from {targetData.year}</div>}
-         <p className="text-[10px] text-slate-500 mt-4 uppercase">Mode: <span className={config.color.replace('bg-', 'text-')}>{config.label}</span></p>
-      </div>
-
-      {/* SLIDER CONTROLS */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-50 pointer-events-auto">
-        <div className="p-4 rounded-full flex items-center gap-6 bg-black/90 border border-white/20 shadow-2xl backdrop-blur-xl">
-            
-            {/* PLAY BUTTON */}
-            <button 
-                onClick={() => setIsPlaying(!isPlaying)}
-                className={`w-12 h-12 flex items-center justify-center rounded-full border border-white/10 transition-all ${isPlaying ? 'bg-red-500 text-white' : 'bg-emerald-500 text-black hover:scale-110'}`}
-            >
-                {isPlaying ? (
-                    <span className="font-bold text-xs">STOP</span>
-                ) : (
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                )}
-            </button>
-
-            <span className={`font-bold font-mono text-xl ${config.color.replace('bg-', 'text-')}`}>{year}</span>
-            <input type="range" className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${config.color.replace('bg-', '')}`} 
-                min="2000" max="2025" value={year} onChange={(e) => { setIsPlaying(false); setYear(parseInt(e.target.value)); }}/>
-        </div>
-      </div>
-
-      <GlobeViz year={year} mode={mode} data={data} target={target} />
-    </main>
-  );
-}
+      <div className="absolute top-28 left-4 z-50 p-
