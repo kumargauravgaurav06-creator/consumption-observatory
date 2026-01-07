@@ -26,7 +26,9 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     'ZAF': { lat: -30.5, lng: 22.9 }, 'NGA': { lat: 9.0, lng: 8.6 },
     'EGY': { lat: 26.8, lng: 30.8 }, 'IDN': { lat: -0.7, lng: 113.9 },
     'KWT': { lat: 29.3, lng: 47.4 }, 'QAT': { lat: 25.3, lng: 51.1 },
-    'ARE': { lat: 23.4, lng: 53.8 }, 'BHR': { lat: 26.0, lng: 50.5 }
+    'ARE': { lat: 23.4, lng: 53.8 }, 'BHR': { lat: 26.0, lng: 50.5 },
+    'SWE': { lat: 60.1, lng: 18.6 }, 'FIN': { lat: 61.9, lng: 25.7 },
+    'DNK': { lat: 56.2, lng: 9.5 }, 'ESP': { lat: 40.4, lng: -3.7 }
   };
 
   useEffect(() => {
@@ -39,11 +41,10 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .pointAltitude('size')
-      .pointRadius(0.6); // Slightly thinner for elegance
+      .pointRadius(0.6);
 
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.3;
-    
     globeInstance.current = world;
 
     const handleResize = () => {
@@ -57,11 +58,29 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
   useEffect(() => {
     if (!globeInstance.current || !data) return;
 
-    // SCALING FACTORS (Adjusted for "Goldilocks" Height)
-    const config = { 
-        color: mode === 'CARBON' ? '#ef4444' : mode === 'WEALTH' ? '#06b6d4' : '#10b981',
-        scale: mode === 'ENERGY' ? 60000 : mode === 'WEALTH' ? 80000 : 50 
+    // --- VISUAL CONFIGURATION ---
+    // Key: Matches 'mode' from page.tsx
+    // Scale: Higher number = Shorter bars (Value / Scale)
+    const configs: any = { 
+        'ENERGY':      { color: '#10b981', scale: 60000 },
+        'WEALTH':      { color: '#06b6d4', scale: 80000 },
+        'CARBON':      { color: '#ef4444', scale: 50 },
+        'RENEWABLES':  { color: '#4ade80', scale: 200 }, // % (0-100)
+        'WATER':       { color: '#3b82f6', scale: 200 }, // % (0-100)
+        'INTERNET':    { color: '#a855f7', scale: 200 }, // % (0-100)
+        'LIFE':        { color: '#ec4899', scale: 180 }, // Years (0-90)
+        'INFLATION':   { color: '#f97316', scale: 40 }   // % (Usually 0-20, sometimes 100)
     };
+
+    const config = configs[mode] || configs['ENERGY'];
+    
+    // Map mode to data key
+    const modeKeys: any = {
+        'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2',
+        'RENEWABLES': 'renewables', 'WATER': 'water', 
+        'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation'
+    };
+    const dataKey = modeKeys[mode];
 
     const pointsData = [];
 
@@ -69,18 +88,21 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
         const countryCode = key.toUpperCase();
         if (LOCATIONS[countryCode]) {
             let value = 0;
-            const metrics = mode === 'ENERGY' ? val.energy : mode === 'WEALTH' ? val.gdp : val.co2;
+            const metrics = val[dataKey];
             
             if (Array.isArray(metrics)) {
                 const entry = metrics.find((d: any) => parseInt(d.date) === year);
                 if (entry) value = parseFloat(entry.value);
-                else if (metrics.length > 0) value = parseFloat(metrics[metrics.length-1].value);
+                else if (metrics.length > 0) value = parseFloat(metrics[metrics.length-1].value); // LKV
             }
             
             if (value > 0) {
-                // CLAMP MAX HEIGHT TO 0.5 (Half Earth Radius)
+                // Scaling Logic
                 let altitude = value / config.scale;
-                if (altitude > 0.5) altitude = 0.5; 
+                
+                // Specific clamps
+                if (mode === 'INFLATION' && altitude > 0.8) altitude = 0.8; // Cap hyperinflation
+                if (altitude > 0.5) altitude = 0.5; // General Cap
                 if (altitude < 0.01) altitude = 0.01;
 
                 pointsData.push({
@@ -95,7 +117,6 @@ export default function GlobeViz({ year, mode, data, target }: GlobeProps) {
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
-  // CAMERA FLIGHT
   useEffect(() => {
       if (!globeInstance.current || !target) return;
       const loc = LOCATIONS[target];
