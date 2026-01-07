@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 const GlobeViz = dynamic(() => import('../components/GlobeViz'), { ssr: false });
 
-// 1. METRICS CONFIGURATION
+// METRICS CONFIGURATION
 const METRICS: Record<string, { key: string; unit: string; label: string; color: string }> = {
   'ENERGY':      { key: 'energy',      unit: 'kWh',   label: 'Energy',      color: 'bg-emerald-500' },
   'WEALTH':      { key: 'gdp',         unit: 'USD',   label: 'Wealth',      color: 'bg-cyan-500' },
@@ -17,32 +17,23 @@ const METRICS: Record<string, { key: string; unit: string; label: string; color:
   'INFLATION':   { key: 'inflation',   unit: '%',     label: 'Inflation',   color: 'bg-orange-500' }
 };
 
-// 2. COMPLETE COUNTRY NAME DICTIONARY
+// COUNTRY DICTIONARY
 const COUNTRY_NAMES: Record<string, string> = {
-  // Major Powers & G20
   'USA': 'United States', 'CHN': 'China', 'IND': 'India', 'RUS': 'Russia',
   'DEU': 'Germany', 'JPN': 'Japan', 'GBR': 'United Kingdom', 'FRA': 'France',
   'BRA': 'Brazil', 'ITA': 'Italy', 'CAN': 'Canada', 'KOR': 'South Korea',
   'AUS': 'Australia', 'MEX': 'Mexico', 'IDN': 'Indonesia', 'SAU': 'Saudi Arabia',
   'TUR': 'Turkey', 'ARG': 'Argentina', 'ZAF': 'South Africa',
-
-  // Europe
   'ESP': 'Spain', 'SWE': 'Sweden', 'FIN': 'Finland', 'DNK': 'Denmark',
   'NOR': 'Norway', 'ISL': 'Iceland', 'CHE': 'Switzerland', 'IRL': 'Ireland',
   'AUT': 'Austria', 'BEL': 'Belgium', 'NLD': 'Netherlands', 'LUX': 'Luxembourg',
   'PRT': 'Portugal', 'POL': 'Poland', 'UKR': 'Ukraine', 'GRC': 'Greece',
   'CZE': 'Czechia', 'HUN': 'Hungary', 'ROU': 'Romania',
-
-  // Middle East
   'ARE': 'UAE', 'QAT': 'Qatar', 'KWT': 'Kuwait', 'BHR': 'Bahrain',
   'OMN': 'Oman', 'ISR': 'Israel', 'IRN': 'Iran', 'IRQ': 'Iraq',
-
-  // Islands & Territories
   'BMU': 'Bermuda', 'CYM': 'Cayman Islands', 'SGP': 'Singapore', 'HKG': 'Hong Kong',
   'MAC': 'Macao', 'FRO': 'Faroe Islands', 'PYF': 'French Polynesia',
   'GRL': 'Greenland', 'PRI': 'Puerto Rico',
-
-  // Developing & Others
   'NGA': 'Nigeria', 'EGY': 'Egypt', 'VNM': 'Vietnam', 'THA': 'Thailand',
   'PAK': 'Pakistan', 'BGD': 'Bangladesh', 'PHL': 'Philippines', 'MYS': 'Malaysia',
   'COL': 'Colombia', 'CHL': 'Chile', 'PER': 'Peru', 'VEN': 'Venezuela'
@@ -54,6 +45,7 @@ export default function Home() {
   const [data, setData] = useState<any>({});
   const [target, setTarget] = useState<string>('USA'); 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(''); // NEW: Search State
 
   // FETCH DATA
   useEffect(() => {
@@ -70,7 +62,7 @@ export default function Home() {
       .catch(e => console.log("Fetch Error"));
   }, []);
 
-  // TIMELAPSE ENGINE (1.2s Speed)
+  // TIMELAPSE
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
@@ -111,11 +103,17 @@ export default function Home() {
         .filter(item => item.value > 0);
   }, [data, year, mode]);
 
-  // Auto-switch target
+  // NEW: Search Filter Logic
   useEffect(() => {
-      const val = getSmartValue(target).value;
-      if (val === 0 && leaders.length > 0) setTarget(leaders[0].name);
-  }, [mode, leaders]);
+      if (searchTerm.length > 2) {
+          // Find first country matching search
+          const match = Object.keys(COUNTRY_NAMES).find(code => 
+              COUNTRY_NAMES[code].toLowerCase().includes(searchTerm.toLowerCase()) || 
+              code.toLowerCase() === searchTerm.toLowerCase()
+          );
+          if (match) setTarget(match);
+      }
+  }, [searchTerm]);
 
   const targetData = getSmartValue(target);
   const config = METRICS[mode];
@@ -140,8 +138,20 @@ export default function Home() {
          </div>
       </div>
 
-      {/* LEADERBOARD */}
+      {/* SEARCH & LEADERBOARD */}
       <div className="absolute top-28 right-4 z-50 p-6 rounded-xl border border-white/20 bg-black/80 w-64 pointer-events-auto backdrop-blur-md">
+         
+         {/* NEW: SEARCH BAR */}
+         <div className="mb-4">
+             <input 
+                type="text" 
+                placeholder="Search Country..." 
+                className="w-full bg-white/10 border border-white/20 rounded px-3 py-1 text-xs text-white focus:outline-none focus:border-emerald-400 transition-colors placeholder-slate-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+             />
+         </div>
+
          <h3 className="text-xs font-bold text-slate-400 mb-4 border-b border-white/10 pb-2 tracking-widest">TOP RANKING</h3>
          <div className="space-y-3">
             {leaders.map((item, i) => (
@@ -173,25 +183,19 @@ export default function Home() {
       {/* SLIDER CONTROLS */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-50 pointer-events-auto">
         <div className="p-4 rounded-full flex items-center gap-6 bg-black/90 border border-white/20 shadow-2xl backdrop-blur-xl">
-            
             <button 
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`w-12 h-12 flex items-center justify-center rounded-full border border-white/10 transition-all ${isPlaying ? 'bg-red-500 text-white' : 'bg-emerald-500 text-black hover:scale-110'}`}
+                className={`w-12 h-12 flex items-center justify-center rounded-full border border-white/10 transition-all ${isPlaying ? 'bg-red-500 text-white' : `${config.color} text-black hover:scale-110`}`}
             >
-                {isPlaying ? (
-                    <span className="font-bold text-xs">STOP</span>
-                ) : (
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                )}
+                {isPlaying ? <span className="font-bold text-xs">STOP</span> : <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
             </button>
-
             <span className={`font-bold font-mono text-xl ${config.color.replace('bg-', 'text-')}`}>{year}</span>
             <input type="range" className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${config.color.replace('bg-', '')}`} 
                 min="2000" max="2025" value={year} onChange={(e) => { setIsPlaying(false); setYear(parseInt(e.target.value)); }}/>
         </div>
       </div>
 
-      <GlobeViz year={year} mode={mode} data={data} target={target} />
+      <GlobeViz year={year} mode={mode} data={data} target={target} onCountryClick={setTarget} />
     </main>
   );
 }
