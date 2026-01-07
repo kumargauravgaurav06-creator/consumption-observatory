@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 const GlobeViz = dynamic(() => import('../components/GlobeViz'), { ssr: false });
 
-// METRIC CONFIGURATION (The Brain)
+// METRIC CONFIGURATION
 const METRICS: Record<string, { key: string; unit: string; label: string; color: string }> = {
   'ENERGY':      { key: 'energy',      unit: 'kWh',   label: 'Energy',      color: 'bg-emerald-500' },
   'WEALTH':      { key: 'gdp',         unit: 'USD',   label: 'Wealth',      color: 'bg-cyan-500' },
@@ -32,7 +32,9 @@ export default function Home() {
   const [mode, setMode] = useState('ENERGY');
   const [data, setData] = useState<any>({});
   const [target, setTarget] = useState<string>('USA'); 
+  const [isPlaying, setIsPlaying] = useState(false); // TIMELAPSE STATE
 
+  // 1. FETCH DATA
   useEffect(() => {
     fetch('/global_data.json')
       .then(res => res.json())
@@ -47,6 +49,18 @@ export default function Home() {
       .catch(e => console.log("Fetch Error"));
   }, []);
 
+  // 2. TIMELAPSE ENGINE
+  useEffect(() => {
+    let interval: any;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setYear((prev) => (prev >= 2025 ? 2000 : prev + 1));
+      }, 600); // Speed: 0.6 seconds per year
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  // 3. SMART VALUES
   const getSmartValue = (countryCode: string) => {
       const country = data[countryCode];
       if (!country) return { value: 0, year: year, isEstimated: false };
@@ -88,12 +102,10 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen bg-transparent overflow-hidden text-white select-none">
       
-      {/* HEADER WITH CATEGORIES */}
+      {/* HEADER */}
       <div className="absolute top-0 left-0 w-full z-50 p-6 pointer-events-none">
          <div className="flex justify-between items-start">
              <h1 className="text-3xl font-bold text-emerald-400 pointer-events-auto tracking-widest drop-shadow-md">PULSE.IO</h1>
-             
-             {/* GRID BUTTONS */}
              <div className="pointer-events-auto grid grid-cols-4 gap-2 w-[400px]">
                 {Object.keys(METRICS).map(m => (
                     <button key={m} onClick={()=>setMode(m)} 
@@ -136,12 +148,25 @@ export default function Home() {
          <p className="text-[10px] text-slate-500 mt-4 uppercase">Mode: <span className={config.color.replace('bg-', 'text-')}>{config.label}</span></p>
       </div>
 
-      {/* SLIDER */}
+      {/* SLIDER CONTROLS (NOW WITH PLAY BUTTON) */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-50 pointer-events-auto">
         <div className="p-4 rounded-full flex items-center gap-6 bg-black/90 border border-white/20 shadow-2xl backdrop-blur-xl">
+            
+            {/* PLAY BUTTON */}
+            <button 
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`w-12 h-12 flex items-center justify-center rounded-full border border-white/10 transition-all ${isPlaying ? 'bg-red-500 text-white' : 'bg-emerald-500 text-black hover:scale-110'}`}
+            >
+                {isPlaying ? (
+                    <span className="font-bold text-xs">STOP</span>
+                ) : (
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                )}
+            </button>
+
             <span className={`font-bold font-mono text-xl ${config.color.replace('bg-', 'text-')}`}>{year}</span>
             <input type="range" className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${config.color.replace('bg-', '')}`} 
-                min="2000" max="2025" value={year} onChange={(e) => setYear(parseInt(e.target.value))}/>
+                min="2000" max="2025" value={year} onChange={(e) => { setIsPlaying(false); setYear(parseInt(e.target.value)); }}/>
         </div>
       </div>
 
