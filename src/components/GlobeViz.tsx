@@ -14,8 +14,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. CALCULATE REAL MAXIMUM (No Guessing)
-  // This finds the true highest number in your dataset for the current view
+  // 1. CALCULATE REAL MAXIMUM
   const { maxVal } = useMemo(() => {
     if (!data) return { maxVal: 0 };
     let max = 0;
@@ -61,19 +60,19 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // USE SATELLITE TEXTURE (Real World Look)
+                    // REAL SATELLITE TEXTURE
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
-                    // Realistic Atmosphere
+                    // CINEMATIC ATMOSPHERE (Brighter, thinner ring)
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.15)
+                    .atmosphereAltitude(0.12) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
                 globeInstance.current.controls().autoRotateSpeed = 0.5;
             }
 
-            // 4. SCALES (Natural)
+            // 4. SCALES (High Contrast Colors)
             const getScale = (metric: string) => {
                 switch(metric) {
                     case 'ENERGY': return d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, maxVal]);
@@ -101,26 +100,31 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
                 
-                // VISUALS: Subtle glass effect
-                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0, 0.1)'); 
-                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.2)'); // Light borders
+                // INVISIBLE SIDES (So it doesn't look like a plastic block)
+                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)'); 
+                
+                // BARELY VISIBLE STROKE (Just a hint of borders)
+                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.15)');
 
+                // CRYSTAL CLEAR CAP COLOR
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
-                    // Transparent if no data (Let the satellite image show through)
+                    // 1. If NO Data -> COMPLETELY TRANSPARENT (Show the Map!)
                     if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
 
                     const scale = getScale(mode);
                     const c = scale(val);
-                    // 60% Opacity: Shows color BUT lets you see the mountains underneath
-                    return c ? c.replace('rgb', 'rgba').replace(')', ', 0.6)') : 'rgba(0,0,0,0)';
+                    
+                    // 2. If Data Exists -> 40% Opacity MAX
+                    // This is the key. 0.4 opacity allows the satellite texture to shine through.
+                    return c ? c.replace('rgb', 'rgba').replace(')', ', 0.4)') : 'rgba(0,0,0,0)';
                 });
                 
-                // ALTITUDE: Real data height
+                // SUBTLE ALTITUDE
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
-                    if (!val) return 0.005;
-                    return 0.01 + ((val / maxVal) * 0.15);
+                    if (!val) return 0.001; // Almost flat
+                    return 0.005 + ((val / maxVal) * 0.1); // Maximum height is small (0.1)
                 });
             }
 
