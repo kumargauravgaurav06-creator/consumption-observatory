@@ -14,7 +14,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. CALCULATE REAL MAXIMUM
+  // 1. CALCULATE MAX (Auto-Calibration)
   const { maxVal } = useMemo(() => {
     if (!data) return { maxVal: 0 };
     let max = 0;
@@ -38,14 +38,13 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
     return { maxVal: max > 0 ? max : 100 };
   }, [data, year, mode]);
 
-  // 2. Load Borders
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
        .then(r => r.json())
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 3. RENDER REALISTIC EARTH
+  // 2. RENDER THE "CRYSTAL CLEAR" GLOBE
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -60,19 +59,19 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // REAL SATELLITE TEXTURE
+                    // TEXTURE: Blue Marble (Matches your reference image)
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
-                    // CINEMATIC ATMOSPHERE (Brighter, thinner ring)
+                    // ATMOSPHERE: Bright Cyan/White glow like sunlight
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.12) 
+                    .atmosphereAltitude(0.15) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.5;
+                globeInstance.current.controls().autoRotateSpeed = 0.6;
             }
 
-            // 4. SCALES (High Contrast Colors)
+            // 3. SCALES
             const getScale = (metric: string) => {
                 switch(metric) {
                     case 'ENERGY': return d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, maxVal]);
@@ -100,31 +99,36 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
                 
-                // INVISIBLE SIDES (So it doesn't look like a plastic block)
-                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)'); 
+                // INVISIBLE SIDES (Removes the blocky "plastic" look)
+                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
                 
-                // BARELY VISIBLE STROKE (Just a hint of borders)
-                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.15)');
+                // BORDER: Extremely faint (5% opacity) just to define shapes
+                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.05)');
 
-                // CRYSTAL CLEAR CAP COLOR
+                // CAP COLOR: Data-Driven Transparency
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
-                    // 1. If NO Data -> COMPLETELY TRANSPARENT (Show the Map!)
+                    
+                    // A. No Data or Zero? -> COMPLETELY INVISIBLE
                     if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
 
                     const scale = getScale(mode);
                     const c = scale(val);
                     
-                    // 2. If Data Exists -> 40% Opacity MAX
-                    // This is the key. 0.4 opacity allows the satellite texture to shine through.
-                    return c ? c.replace('rgb', 'rgba').replace(')', ', 0.4)') : 'rgba(0,0,0,0)';
+                    // B. Variable Opacity Calculation
+                    // Low values = 0.1 opacity (Glass)
+                    // High values = 0.5 opacity (Tinted Glass)
+                    // This ensures the "Fog" is gone.
+                    const opacity = 0.1 + ((val / maxVal) * 0.4); 
+                    
+                    return c ? c.replace('rgb', 'rgba').replace(')', `, ${opacity})`) : 'rgba(0,0,0,0)';
                 });
                 
-                // SUBTLE ALTITUDE
+                // ALTITUDE: Minimal lift to avoid "Spikes"
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
-                    if (!val) return 0.001; // Almost flat
-                    return 0.005 + ((val / maxVal) * 0.1); // Maximum height is small (0.1)
+                    if (!val) return 0.001; 
+                    return 0.005 + ((val / maxVal) * 0.08); // Very subtle 3D
                 });
             }
 
