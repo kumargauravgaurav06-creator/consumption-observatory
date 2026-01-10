@@ -52,7 +52,6 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
         try {
             const GlobeModule = await import('globe.gl');
             const Globe = GlobeModule.default;
-            const d3Scale = await import('d3-scale');
 
             if (!globeInstance.current) {
                 // @ts-ignore
@@ -61,25 +60,31 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.12) 
+                    .atmosphereAltitude(0.12)
+                    // Simple interaction: Change cursor on hover (Safe)
+                    .onPolygonHover((hoverD: any) => {
+                        if (globeEl.current) {
+                            globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
+                        }
+                    }) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
                 globeInstance.current.controls().autoRotateSpeed = 0.3;
             }
 
-            // 3. COLOR PALETTE (Your Idea: One Color Per Mode)
+            // 3. COLOR PALETTE (For Borders Only)
             const getBaseColor = (metric: string) => {
                 switch(metric) {
-                    case 'ENERGY': return '0, 255, 100';    // Bright Emerald Green
+                    case 'ENERGY': return '0, 255, 100';    // Emerald
                     case 'WEALTH': return '255, 215, 0';    // Gold
-                    case 'CARBON': return '255, 50, 50';    // Bright Red
-                    case 'INFLATION': return '255, 100, 0'; // Hot Orange
-                    case 'WATER': return '0, 150, 255';     // Ocean Blue
-                    case 'INTERNET': return '0, 255, 255';  // Cyan/Neon Blue
-                    case 'LIFE': return '255, 0, 255';      // Magenta/Pink
-                    case 'RENEWABLES': return '100, 255, 0';// Lime Green
-                    default: return '255, 255, 255';        // White
+                    case 'CARBON': return '255, 50, 50';    // Red
+                    case 'INFLATION': return '255, 100, 0'; // Orange
+                    case 'WATER': return '0, 150, 255';     // Blue
+                    case 'INTERNET': return '0, 255, 255';  // Cyan
+                    case 'LIFE': return '255, 0, 255';      // Magenta
+                    case 'RENEWABLES': return '100, 255, 0';// Lime
+                    default: return '255, 255, 255';        
                 }
             };
 
@@ -100,35 +105,22 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
 
-                // --- THE "GLASS GRADIENT" IMPLEMENTATION ---
-                
-                // 1. INVISIBLE SIDES (Keep it looking like a sticker, not a block)
+                // A. INVISIBLE SIDES
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
 
-                // 2. CAP COLOR: THE GRADIENT LOGIC
-                globeInstance.current.polygonCapColor((d: any) => {
-                    const val = getVal(d.id);
-                    if (val === null || val === 0) return 'rgba(0,0,0,0)'; // Invisible if 0
+                // B. INVISIBLE CAP (This removes the hue/fill completely)
+                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)');
 
-                    const baseRgb = getBaseColor(mode);
-                    
-                    // OPACITY LOGIC:
-                    // Low Value = 10% Opacity (See the mountains clearly)
-                    // High Value = 70% Opacity (Rich color, but still slightly transparent)
-                    const opacity = 0.1 + ((val / maxVal) * 0.6); 
-                    
-                    return `rgba(${baseRgb}, ${opacity})`;
-                });
-
-                // 3. BORDER: SOLID COLOR (To define the shape clearly)
+                // C. SOLID BORDER (Data is shown here)
                 globeInstance.current.polygonStrokeColor((d: any) => {
                     const val = getVal(d.id);
-                    if (val === null || val === 0) return 'rgba(255,255,255, 0.15)'; // Faint white ghost
+                    // Faint white if no data, Solid color if data exists
+                    if (val === null || val === 0) return 'rgba(255,255,255, 0.15)'; 
                     const baseRgb = getBaseColor(mode);
-                    return `rgba(${baseRgb}, 1)`; // 100% Solid Border
+                    return `rgba(${baseRgb}, 1)`;
                 });
 
-                // 4. ALTITUDE: Low (Decal style)
+                // D. LOW ALTITUDE
                 globeInstance.current.polygonAltitude(0.006);
             }
 
