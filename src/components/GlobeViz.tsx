@@ -1,9 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-// NOTE: We do not import Globe or D3 at the top. 
-// This prevents the Server-Side Rendering (SSR) crash.
-
 type GlobeProps = {
   year: number;
   mode: string;
@@ -28,33 +25,31 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   useEffect(() => {
     if (!globeEl.current) return;
 
-    // This function loads the libraries ONLY when the browser is ready
     const loadLibrariesAndRender = async () => {
         try {
-            // A. Dynamically import the tools
-            // This bypasses the "Client-side exception" completely
+            // Import libraries safely
             const GlobeModule = await import('globe.gl');
             const Globe = GlobeModule.default;
-            
             const d3Scale = await import('d3-scale');
             const d3Chromatic = await import('d3-scale-chromatic');
 
-            // B. Initialize Globe (if not already done)
+            // Initialize Globe
             if (!globeInstance.current) {
-                // @ts-ignore - Ignore the TypeScript type mismatch
+                // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
+                    // Using a cleaner night texture to reduce visual noise
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#3a228a')
-                    .atmosphereAltitude(0.2)
+                    .atmosphereAltitude(0.15)
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
                 globeInstance.current.controls().autoRotateSpeed = 0.5;
             }
 
-            // C. Define Helper to get Colors safely
+            // Color Helper
             const getD3Color = (metric: string, val: number) => {
                 let scale;
                 switch(metric) {
@@ -62,13 +57,15 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                     case 'WEALTH': scale = d3Scale.scaleSequential(d3Chromatic.interpolateViridis).domain([0, 100000]); break;
                     case 'CARBON': scale = d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, 30]); break;
                     case 'WATER':  scale = d3Scale.scaleSequential(d3Chromatic.interpolateBlues).domain([50, 100]); break;
-                    default:       scale = d3Scale.scaleSequential(d3Chromatic.interpolateMagma).domain([0, 100]);
+                    case 'LIFE':   scale = d3Scale.scaleSequential(d3Chromatic.interpolateMagma).domain([50, 90]); break;
+                    default:       scale = d3Scale.scaleSequential(d3Chromatic.interpolatePlasma).domain([0, 100]);
                 }
                 const c = scale(val);
-                return c ? c.replace('rgb', 'rgba').replace(')', ', 0.8)') : 'rgba(255,255,255,0.1)';
+                // Increased opacity (0.9) to hide the map underneath better
+                return c ? c.replace('rgb', 'rgba').replace(')', ', 0.9)') : 'rgba(25,25,25,0.8)';
             };
 
-            // D. Helper to get Data
+            // Data Helper
             const getVal = (id: string) => {
                 if (!data || !data[id]) return 0;
                 const keyMap: any = { 
@@ -85,19 +82,25 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 return sorted[0] ? parseFloat(sorted[0].value) : 0;
             };
 
-            // E. Update Visuals
+            // Update Visuals
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
-                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
+                
+                // VISUAL FIX: Side Color matches the top color for a solid "block" look
+                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0.5)');
                 globeInstance.current.polygonStrokeColor(() => '#111');
+                
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
-                    return val > 0 ? getD3Color(mode, val) : 'rgba(255,255,255,0.02)';
+                    return val > 0 ? getD3Color(mode, val) : 'rgba(0,0,0,0)'; // Invisible if no data
                 });
+                
+                // Z-FIGHTING FIX: Lift everything up by 0.01 minimum
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
-                    const max = mode === 'WEALTH' ? 100000 : 50000;
-                    return val > 0 ? (val / max) * 0.08 : 0.005;
+                    const max = mode === 'WEALTH' ? 100000 : mode === 'ENERGY' ? 60000 : 100;
+                    // Minimum altitude 0.01 prevents the flickering
+                    return val > 0 ? 0.01 + ((val / max) * 0.15) : 0.01;
                 });
             }
 
@@ -108,7 +111,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
     loadLibrariesAndRender();
 
-  }, [geoJson, data, year, mode]); // Re-run when these change
+  }, [geoJson, data, year, mode]);
 
   // Resize Handler
   useEffect(() => {
