@@ -13,7 +13,6 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
-  const [hoverId, setHoverId] = useState<string | null>(null); // Track what we are hovering
 
   // 1. DATA CALCULATION
   const { maxVal } = useMemo(() => {
@@ -45,7 +44,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 2. RENDER LOGIC
+  // 2. RENDER
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -53,7 +52,6 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
         try {
             const GlobeModule = await import('globe.gl');
             const Globe = GlobeModule.default;
-            const d3Scale = await import('d3-scale');
 
             if (!globeInstance.current) {
                 // @ts-ignore
@@ -63,57 +61,29 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#7ca4ff')
                     .atmosphereAltitude(0.12)
-                    // INTERACTION 1: HOVER TOOLTIP
+                    // Simple interaction: Change cursor on hover (Safe)
                     .onPolygonHover((hoverD: any) => {
-                        setHoverId(hoverD ? hoverD.id : null);
                         if (globeEl.current) {
                             globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
                         }
-                    })
-                    // INTERACTION 2: CINEMATIC FLY-TO
-                    .onPolygonClick((d: any) => { 
-                        if (onCountryClick) onCountryClick(d.id);
-                        
-                        // Fly to the country location
-                        const bbox = d.bbox || []; // You might need center logic if bbox missing
-                        // Simple center approximation (Globe.gl calculates this internally usually)
-                        // This commands the camera to rotate to the clicked polygon
-                        // We use a slight delay to allow the React state to update first
-                        // Note: polygon click returns the GeoJSON feature
-                        
-                        // Calculate Centroid (Simple approximation)
-                        // If your geojson has centroid, use it. If not, GlobeGL handles view centering automatically on some versions,
-                        // but explicit 'pointOfView' is best. 
-                        // For now, we rely on the user visually seeing the click, 
-                        // but let's pause rotation to let them focus.
-                        globeInstance.current.controls().autoRotate = false;
-                        setTimeout(() => { globeInstance.current.controls().autoRotate = true; }, 5000); // Restart after 5s
-                    })
-                    // HOVER LABEL (Native GlobeGL Tooltip)
-                    .polygonLabel((d: any) => {
-                        const val = getVal(d.id);
-                        const displayVal = val ? val.toLocaleString() : 'N/A';
-                        return `
-                            <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-family: monospace;">
-                                <b>${d.properties.name}</b>: ${displayVal}
-                            </div>
-                        `;
-                    });
+                    }) 
+                    .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
                 globeInstance.current.controls().autoRotateSpeed = 0.3;
             }
 
+            // 3. COLOR PALETTE
             const getBaseColor = (metric: string) => {
                 switch(metric) {
-                    case 'ENERGY': return '0, 255, 100';    
-                    case 'WEALTH': return '255, 215, 0';    
-                    case 'CARBON': return '255, 50, 50';    
-                    case 'INFLATION': return '255, 100, 0'; 
-                    case 'WATER': return '0, 150, 255';     
-                    case 'INTERNET': return '0, 255, 255';  
-                    case 'LIFE': return '255, 0, 255';      
-                    case 'RENEWABLES': return '100, 255, 0';
+                    case 'ENERGY': return '0, 255, 100';    // Emerald
+                    case 'WEALTH': return '255, 215, 0';    // Gold
+                    case 'CARBON': return '255, 50, 50';    // Red
+                    case 'INFLATION': return '255, 100, 0'; // Orange
+                    case 'WATER': return '0, 150, 255';     // Blue
+                    case 'INTERNET': return '0, 255, 255';  // Cyan
+                    case 'LIFE': return '255, 0, 255';      // Magenta
+                    case 'RENEWABLES': return '100, 255, 0';// Lime
                     default: return '255, 255, 255';        
                 }
             };
@@ -134,45 +104,32 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
+
+                // A. INVISIBLE SIDES
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
 
-                // CAP COLOR (Glass Effect)
+                // B. GLASS GRADIENT CAP
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
                     if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
 
                     const baseRgb = getBaseColor(mode);
+                    // Standardized opacity math that worked before
                     const opacity = 0.1 + ((val / maxVal) * 0.6); 
-                    
-                    // INTERACTION 3: HOVER HIGHLIGHT
-                    // If hovered, boost opacity to 0.8 so it "Lights Up"
-                    if (d.id === hoverId) {
-                        return `rgba(${baseRgb}, 0.8)`;
-                    }
                     
                     return `rgba(${baseRgb}, ${opacity})`;
                 });
 
-                // BORDER:
+                // C. SOLID BORDER
                 globeInstance.current.polygonStrokeColor((d: any) => {
                     const val = getVal(d.id);
-                    // If hovered, turn border PURE WHITE
-                    if (d.id === hoverId) return 'rgba(255,255,255, 1)';
-
                     if (val === null || val === 0) return 'rgba(255,255,255, 0.15)'; 
                     const baseRgb = getBaseColor(mode);
                     return `rgba(${baseRgb}, 1)`;
                 });
 
-                // ALTITUDE:
-                globeInstance.current.polygonAltitude((d: any) => {
-                    // Lift the hovered country slightly higher (Tactile Pop)
-                    if (d.id === hoverId) return 0.03; 
-                    return 0.006;
-                });
-                
-                // Important: Trigger update when hoverId changes
-                globeInstance.current.polygonsTransitionDuration(300); // Smooth transition
+                // D. LOW ALTITUDE
+                globeInstance.current.polygonAltitude(0.006);
             }
 
         } catch (e) {
@@ -182,7 +139,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
     loadLibrariesAndRender();
 
-  }, [geoJson, data, year, mode, maxVal, hoverId]); // Add hoverId to dependency array
+  }, [geoJson, data, year, mode, maxVal]);
 
   useEffect(() => {
      const handleResize = () => { 
