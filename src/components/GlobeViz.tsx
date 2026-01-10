@@ -53,7 +53,6 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             const GlobeModule = await import('globe.gl');
             const Globe = GlobeModule.default;
             const d3Scale = await import('d3-scale');
-            const d3Chromatic = await import('d3-scale-chromatic');
 
             if (!globeInstance.current) {
                 // @ts-ignore
@@ -62,24 +61,35 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.15) 
+                    .atmosphereAltitude(0.12) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.5;
+                globeInstance.current.controls().autoRotateSpeed = 0.3;
             }
 
-            // 3. COLOR SCALES (Optimized for Visibility on Satellite Map)
-            // We use colors that contrast well with Blue/Green Earth
+            // 3. NEON SCALES (High Visibility Only)
+            // We strictly use bright, light colors. No dark colors allowed.
             const getScale = (metric: string) => {
                 switch(metric) {
-                    case 'ENERGY': return d3Scale.scaleSequential(d3Chromatic.interpolateSpring).domain([0, maxVal]); // Bright Green/Pink
-                    case 'WEALTH': return d3Scale.scaleSequential(d3Chromatic.interpolateWarming).domain([0, maxVal]); // Gold/Orange
-                    case 'CARBON': return d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, maxVal]); // Bright Red
-                    case 'INFLATION': return d3Scale.scaleSequential(d3Chromatic.interpolatePlasma).domain([0, maxVal]); // Purple/Yellow Neon
-                    case 'WATER': return d3Scale.scaleSequential(d3Chromatic.interpolateCool).domain([0, 100]); // Cyan/Purple
-                    case 'INTERNET': return d3Scale.scaleSequential(d3Chromatic.interpolateCyan).domain([0, 100]); // Bright Cyan
-                    default: return d3Scale.scaleSequential(d3Chromatic.interpolateViridis).domain([0, maxVal]);
+                    // Energy: Bright Cyan -> Electric Blue
+                    case 'ENERGY': return d3Scale.scaleLinear().domain([0, maxVal]).range(['#00ffea', '#007eff']); 
+                    
+                    // Wealth: Light Yellow -> Bright Gold
+                    case 'WEALTH': return d3Scale.scaleLinear().domain([0, maxVal]).range(['#fff700', '#ffaa00']);
+                    
+                    // Carbon: Bright Orange -> Hot Pink
+                    case 'CARBON': return d3Scale.scaleLinear().domain([0, maxVal]).range(['#ffae00', '#ff0055']);
+                    
+                    // Inflation: Bright Red -> Pure White (Heat)
+                    case 'INFLATION': return d3Scale.scaleLinear().domain([0, maxVal]).range(['#ff3300', '#ffffff']);
+                    
+                    // Water/Internet: White -> Bright Blue
+                    case 'WATER': 
+                    case 'INTERNET': return d3Scale.scaleLinear().domain([0, 100]).range(['#ffffff', '#00aaff']);
+                    
+                    // Default: Bright Green
+                    default: return d3Scale.scaleLinear().domain([0, maxVal]).range(['#ccff00', '#00ff00']);
                 }
             };
 
@@ -100,27 +110,23 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
 
-                // --- HIGH VISIBILITY SETTINGS ---
-
-                // 1. CAP & SIDE: INVISIBLE
+                // A. FILL IS INVISIBLE
                 globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)');
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
 
-                // 2. ALTITUDE: LIFTED
-                // We raise the lines to 0.01 to ensure they sit ON TOP of the mountains/clouds
-                globeInstance.current.polygonAltitude(0.01);
+                // B. ALTITUDE LIFT (Higher = Clearer separation from texture)
+                globeInstance.current.polygonAltitude(0.015);
 
-                // 3. STROKE: SOLID & BRIGHT
+                // C. STROKE IS NEON
                 globeInstance.current.polygonStrokeColor((d: any) => {
                     const val = getVal(d.id);
                     
-                    // A. No Data? -> Solid White Line (40% Opacity)
-                    // This ensures every country is visible as a boundary
-                    if (val === null || val === 0) return 'rgba(255,255,255, 0.4)';
+                    // If NO data: Faint White (Visible but ghostly)
+                    if (val === null || val === 0) return 'rgba(255,255,255, 0.5)';
 
-                    // B. Real Data -> 100% OPAQUE COLOR
+                    // If YES data: Solid Neon Color
                     const scale = getScale(mode);
-                    return scale(val); // No transparency added. Pure color.
+                    return scale(val);
                 });
             }
 
