@@ -14,9 +14,9 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. CALCULATE MAX (Auto-Calibration)
+  // 1. DATA CALCULATION
   const { maxVal } = useMemo(() => {
-    if (!data) return { maxVal: 0 };
+    if (!data) return { maxVal: 100 };
     let max = 0;
     const keyMap: any = { 
         'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
@@ -44,7 +44,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 2. RENDER THE "CRYSTAL CLEAR" GLOBE
+  // 2. RENDER PURE EARTH
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -59,16 +59,16 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // TEXTURE: Blue Marble (Matches your reference image)
+                    // TEXTURE: Blue Marble (Reference Quality)
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
-                    // ATMOSPHERE: Bright Cyan/White glow like sunlight
+                    // ATMOSPHERE: High realism
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.15) 
+                    .atmosphereAltitude(0.12) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.6;
+                globeInstance.current.controls().autoRotateSpeed = 0.4;
             }
 
             // 3. SCALES
@@ -99,36 +99,36 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
                 
-                // INVISIBLE SIDES (Removes the blocky "plastic" look)
+                // --- 100% TRANSPARENCY SETTINGS ---
+
+                // 1. INVISIBLE SIDES (Remove 3D Blockiness)
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
                 
-                // BORDER: Extremely faint (5% opacity) just to define shapes
-                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.05)');
+                // 2. INVISIBLE BORDERS (Remove White Lines)
+                globeInstance.current.polygonStrokeColor(() => 'rgba(0,0,0,0)');
 
-                // CAP COLOR: Data-Driven Transparency
+                // 3. GHOST CAP COLOR (Only Tint)
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
                     
-                    // A. No Data or Zero? -> COMPLETELY INVISIBLE
+                    // IF NO DATA: 100% Transparent (Invisible)
                     if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
 
                     const scale = getScale(mode);
                     const c = scale(val);
                     
-                    // B. Variable Opacity Calculation
-                    // Low values = 0.1 opacity (Glass)
-                    // High values = 0.5 opacity (Tinted Glass)
-                    // This ensures the "Fog" is gone.
-                    const opacity = 0.1 + ((val / maxVal) * 0.4); 
+                    // IF DATA: Max 30% Opacity. 
+                    // This means even the highest data is 70% transparent.
+                    const opacity = 0.05 + ((val / maxVal) * 0.25); 
                     
                     return c ? c.replace('rgb', 'rgba').replace(')', `, ${opacity})`) : 'rgba(0,0,0,0)';
                 });
                 
-                // ALTITUDE: Minimal lift to avoid "Spikes"
+                // 4. LOW ALTITUDE (Hugs the surface)
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
-                    if (!val) return 0.001; 
-                    return 0.005 + ((val / maxVal) * 0.08); // Very subtle 3D
+                    if (!val) return 0; // Flat
+                    return 0.005 + ((val / maxVal) * 0.05); // Very subtle lift
                 });
             }
 
