@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 
 type GlobeProps = {
   year: number;
@@ -14,14 +14,39 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. Load Borders
+  // 1. CALCULATE REAL MAXIMUM (No Guessing)
+  // This finds the true highest number in your dataset for the current view
+  const { maxVal } = useMemo(() => {
+    if (!data) return { maxVal: 0 };
+    let max = 0;
+    const keyMap: any = { 
+        'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
+        'RENEWABLES': 'renewables', 'WATER': 'water', 
+        'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation' 
+    };
+    const key = keyMap[mode];
+
+    Object.values(data).forEach((country: any) => {
+        const metrics = country[key];
+        if (Array.isArray(metrics)) {
+            const entry = metrics.find((d: any) => parseInt(d.date) === year);
+            if (entry) {
+                const val = parseFloat(entry.value);
+                if (val > max) max = val;
+            }
+        }
+    });
+    return { maxVal: max > 0 ? max : 100 };
+  }, [data, year, mode]);
+
+  // 2. Load Borders
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
        .then(r => r.json())
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 2. RENDER LOGIC
+  // 3. RENDER REALISTIC EARTH
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -32,49 +57,35 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             const d3Scale = await import('d3-scale');
             const d3Chromatic = await import('d3-scale-chromatic');
 
-            // Initialize Globe (One time only)
             if (!globeInstance.current) {
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // High-Contrast Dark Map (Better for colors than Satellite)
-                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+                    // USE SATELLITE TEXTURE (Real World Look)
+                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
-                    .atmosphereColor('#88c0d0') // Soft Nordic Blue glow
+                    // Realistic Atmosphere
+                    .atmosphereColor('#7ca4ff')
                     .atmosphereAltitude(0.15)
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.6;
+                globeInstance.current.controls().autoRotateSpeed = 0.5;
             }
 
-            // --- SINGLE COLOR SCALES (Lighter -> Darker) ---
+            // 4. SCALES (Natural)
             const getScale = (metric: string) => {
                 switch(metric) {
-                    case 'ENERGY': 
-                        // Green: Pale -> Deep
-                        return d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, 60000]); 
-                    case 'WEALTH': 
-                        // Orange/Gold: Pale -> Deep
-                        return d3Scale.scaleSequential(d3Chromatic.interpolateOranges).domain([0, 100000]); 
-                    case 'CARBON': 
-                        // Red: Pale -> Deep
-                        return d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, 30]); 
-                    case 'WATER': 
-                    case 'INTERNET':
-                        // Blue: Pale -> Deep
-                        return d3Scale.scaleSequential(d3Chromatic.interpolateBlues).domain([0, 100]); 
-                    case 'INFLATION':
-                    case 'LIFE':
-                        // Purple: Pale -> Deep
-                        return d3Scale.scaleSequential(d3Chromatic.interpolatePurples).domain([0, 100]);
-                    default:       
-                        return d3Scale.scaleSequential(d3Chromatic.interpolateGreys).domain([0, 100]);
+                    case 'ENERGY': return d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, maxVal]);
+                    case 'WEALTH': return d3Scale.scaleSequential(d3Chromatic.interpolateYlOrBr).domain([0, maxVal]);
+                    case 'CARBON': return d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, maxVal]);
+                    case 'INFLATION': return d3Scale.scaleSequential(d3Chromatic.interpolateInferno).domain([0, maxVal]);
+                    default: return d3Scale.scaleSequential(d3Chromatic.interpolateBlues).domain([0, 100]);
                 }
             };
 
             const getVal = (id: string) => {
-                if (!data || !data[id]) return 0;
+                if (!data || !data[id]) return null;
                 const keyMap: any = { 
                     'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
                     'RENEWABLES': 'renewables', 'WATER': 'water', 
@@ -82,44 +93,35 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 };
                 const key = keyMap[mode];
                 const metrics = data[id][key];
-                if (!Array.isArray(metrics)) return 0;
+                if (!Array.isArray(metrics)) return null;
                 const entry = metrics.find((d: any) => parseInt(d.date) === year);
-                if (entry) return parseFloat(entry.value);
-                const sorted = [...metrics].sort((a:any, b:any) => parseInt(b.date) - parseInt(a.date));
-                return sorted[0] ? parseFloat(sorted[0].value) : 0;
+                return entry ? parseFloat(entry.value) : null;
             };
 
             if (geoJson) {
-                // Update Data
                 globeInstance.current.polygonsData(geoJson);
                 
-                // 1. SIDE COLOR: Darker version of the top color for depth
-                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0, 0.6)');
-                
-                // 2. STROKE: Very thin, visible lines
-                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.1)');
+                // VISUALS: Subtle glass effect
+                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0, 0.1)'); 
+                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255, 0.2)'); // Light borders
 
-                // 3. CAP COLOR: The main gradient
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
-                    if (val === 0) return 'rgba(50,50,50, 0.3)'; // Dark Grey for "No Data" (Visible but background)
-                    
+                    // Transparent if no data (Let the satellite image show through)
+                    if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
+
                     const scale = getScale(mode);
                     const c = scale(val);
-                    // High Opacity (0.9) to make colors pop against dark background
-                    return c ? c.replace('rgb', 'rgba').replace(')', ', 0.9)') : 'rgba(50,50,50,0.3)';
+                    // 60% Opacity: Shows color BUT lets you see the mountains underneath
+                    return c ? c.replace('rgb', 'rgba').replace(')', ', 0.6)') : 'rgba(0,0,0,0)';
                 });
                 
-                // 4. ALTITUDE: Smooth extrusion
+                // ALTITUDE: Real data height
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
-                    const max = mode === 'WEALTH' ? 100000 : mode === 'ENERGY' ? 60000 : 100;
-                    // Base altitude 0.01 + visual height
-                    return val > 0 ? 0.01 + ((val / max) * 0.12) : 0.008;
+                    if (!val) return 0.005;
+                    return 0.01 + ((val / maxVal) * 0.15);
                 });
-                
-                // 5. TRANSITION: Smooth animation when switching modes
-                globeInstance.current.polygonsTransitionDuration(1000);
             }
 
         } catch (e) {
@@ -129,8 +131,9 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
     loadLibrariesAndRender();
 
-  }, [geoJson, data, year, mode]);
+  }, [geoJson, data, year, mode, maxVal]);
 
+  // Resize Handler
   useEffect(() => {
      const handleResize = () => { 
          if (globeInstance.current) {
