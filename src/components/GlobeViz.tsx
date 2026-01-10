@@ -14,14 +14,12 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. Load Borders
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
        .then(r => r.json())
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 2. RENDER REALISTIC GLOBE
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -36,49 +34,49 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // REALISTIC TEXTURE: Blue Marble (Satellite View)
+                    // HD SATELLITE TEXTURE
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-                    // REALISTIC ATMOSPHERE: Light Blue Glow
-                    .atmosphereColor('#4ca6ff') 
-                    .atmosphereAltitude(0.15)
+                    // CRISP ATMOSPHERE (Subtle glow, not foggy)
+                    .atmosphereColor('#7ca4ff') 
+                    .atmosphereAltitude(0.12) 
                     .width(window.innerWidth).height(window.innerHeight)
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.5;
+                globeInstance.current.controls().autoRotateSpeed = 0.6;
             }
 
-            // REALISTIC COLOR SCALES
-            const getD3Color = (metric: string, val: number) => {
+            // VIBRANT COLORS for Satellite Contrast
+            const getD3Color = (metric: string, val: number, max: number) => {
                 let scale;
+                const normalized = Math.min(val / max, 1); // 0 to 1 intensity
+                
+                // Dynamic Opacity: 
+                // Low data = See the real earth (0.1 opacity)
+                // High data = See the color (0.8 opacity)
+                const opacity = 0.1 + (normalized * 0.7);
+
                 switch(metric) {
                     case 'ENERGY': 
-                        // Green (Eco/Energy)
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, 60000]); 
-                        break;
+                        // Electric Green
+                        return `rgba(0, 255, 100, ${opacity})`; 
                     case 'WEALTH': 
-                        // Gold/Orange (Money) -> using YlOrBr (Yellow-Orange-Brown)
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateYlOrBr).domain([0, 100000]); 
-                        break;
+                        // Rich Gold
+                        return `rgba(255, 215, 0, ${opacity})`; 
                     case 'CARBON': 
-                        // Red (Danger)
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, 30]); 
-                        break;
-                    case 'WATER': 
-                    case 'INTERNET': // (Online)
-                        // Blue (Technology/Water)
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateBlues).domain([0, 100]); 
-                        break;
+                        // Alarm Red
+                        return `rgba(255, 50, 50, ${opacity})`; 
+                    case 'WATER':  
+                    case 'INTERNET':
+                        // Cyber Blue
+                        return `rgba(0, 180, 255, ${opacity})`; 
                     case 'INFLATION':
-                         // White to Red (Heatmap)
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, 20]);
-                        break;
+                        // Hot Orange
+                        return `rgba(255, 140, 0, ${opacity})`;
                     default:       
-                        scale = d3Scale.scaleSequential(d3Chromatic.interpolateViridis).domain([0, 100]);
+                        // Deep Purple
+                        return `rgba(180, 50, 255, ${opacity})`;
                 }
-                const c = scale(val);
-                // Glass Effect: 0.6 opacity lets the satellite texture show through
-                return c ? c.replace('rgb', 'rgba').replace(')', ', 0.6)') : 'rgba(255,255,255,0.1)';
             };
 
             const getVal = (id: string) => {
@@ -100,26 +98,29 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
                 
-                // VISUALS: Subtle borders, transparent glass fill
-                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0.2)');
-                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255,0.3)'); // Light borders
+                // SIDE COLOR: Dark glass for depth
+                globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0.6)');
+                
+                // STROKE: Very faint white to define borders without clutter
+                globeInstance.current.polygonStrokeColor(() => 'rgba(255,255,255,0.15)');
                 
                 globeInstance.current.polygonCapColor((d: any) => {
                     const val = getVal(d.id);
-                    // Use a very faint grey for 0 data, so it's never "Invisible"
-                    return val > 0 ? getD3Color(mode, val) : 'rgba(200,200,200,0.1)'; 
+                    const max = mode === 'WEALTH' ? 100000 : mode === 'ENERGY' ? 60000 : 100;
+                    // Return Vivid Custom Color
+                    return val > 0 ? getD3Color(mode, val, max) : 'rgba(0,0,0,0)'; // Totally invisible if no data
                 });
                 
-                // 3D LIFT: Keep the anti-flicker logic
+                // 3D HEIGHT: Data "grows" out of the map
                 globeInstance.current.polygonAltitude((d: any) => {
                     const val = getVal(d.id);
                     const max = mode === 'WEALTH' ? 100000 : mode === 'ENERGY' ? 60000 : 100;
-                    return val > 0 ? 0.01 + ((val / max) * 0.1) : 0.005;
+                    return val > 0 ? 0.01 + ((val / max) * 0.15) : 0.005;
                 });
             }
 
         } catch (e) {
-            console.error("Globe Load Error:", e);
+            console.error("Globe Error:", e);
         }
     };
 
@@ -127,6 +128,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
   }, [geoJson, data, year, mode]);
 
+  // Resize Handler
   useEffect(() => {
      const handleResize = () => { 
          if (globeInstance.current) {
