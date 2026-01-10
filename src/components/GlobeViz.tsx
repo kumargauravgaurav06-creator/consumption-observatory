@@ -14,7 +14,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
 
-  // 1. DATA CALCULATION
+  // 1. DATA-DRIVEN SCALING (No guessing)
   const { maxVal } = useMemo(() => {
     if (!data) return { maxVal: 100 };
     let max = 0;
@@ -35,6 +35,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             }
         }
     });
+    console.log(`[GlobeViz] Max Value for ${mode}:`, max); // Debug log to confirm new code
     return { maxVal: max > 0 ? max : 100 };
   }, [data, year, mode]);
 
@@ -44,7 +45,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
        .then(d => { if (d && d.features) setGeoJson(d.features); });
   }, []);
 
-  // 2. RENDER PURE EARTH
+  // 2. RENDER LOGIC
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -59,26 +60,27 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
                     .backgroundColor('#000000')
-                    // TEXTURE: Blue Marble (Reference Quality)
+                    // TEXTURE: Blue Marble (The Reference Image Look)
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
-                    // ATMOSPHERE: High realism
+                    // ATMOSPHERE: Bright and Airy
                     .atmosphereColor('#7ca4ff')
-                    .atmosphereAltitude(0.12) 
+                    .atmosphereAltitude(0.15) 
                     .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.4;
+                globeInstance.current.controls().autoRotateSpeed = 0.5;
             }
 
-            // 3. SCALES
+            // 3. COLOR SCALES (Bright Neon for Borders)
+            // We use standard linear scales mapped to your real maxVal
             const getScale = (metric: string) => {
                 switch(metric) {
                     case 'ENERGY': return d3Scale.scaleSequential(d3Chromatic.interpolateGreens).domain([0, maxVal]);
-                    case 'WEALTH': return d3Scale.scaleSequential(d3Chromatic.interpolateYlOrBr).domain([0, maxVal]);
+                    case 'WEALTH': return d3Scale.scaleSequential(d3Chromatic.interpolateYlOrBr).domain([0, maxVal]); // Gold
                     case 'CARBON': return d3Scale.scaleSequential(d3Chromatic.interpolateReds).domain([0, maxVal]);
                     case 'INFLATION': return d3Scale.scaleSequential(d3Chromatic.interpolateInferno).domain([0, maxVal]);
-                    default: return d3Scale.scaleSequential(d3Chromatic.interpolateBlues).domain([0, 100]);
+                    default: return d3Scale.scaleSequential(d3Chromatic.interpolateCyan).domain([0, 100]);
                 }
             };
 
@@ -98,37 +100,31 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
-                
-                // --- 100% TRANSPARENCY SETTINGS ---
 
-                // 1. INVISIBLE SIDES (Remove 3D Blockiness)
+                // --- STRICT BORDER-ONLY MODE ---
+
+                // 1. CAP COLOR (Fill): STRICTLY OFF
+                // Use 'rgba(0,0,0,0)' to make the body invisible
+                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)');
+
+                // 2. SIDE COLOR (3D Wall): STRICTLY OFF
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
-                
-                // 2. INVISIBLE BORDERS (Remove White Lines)
-                globeInstance.current.polygonStrokeColor(() => 'rgba(0,0,0,0)');
 
-                // 3. GHOST CAP COLOR (Only Tint)
-                globeInstance.current.polygonCapColor((d: any) => {
+                // 3. ALTITUDE: FLAT
+                // We keep it extremely low (0.001) so it sits on the surface like a decal
+                // If we make it too high, it looks like a block.
+                globeInstance.current.polygonAltitude(0.005);
+
+                // 4. STROKE COLOR (Border): DATA DRIVEN
+                globeInstance.current.polygonStrokeColor((d: any) => {
                     const val = getVal(d.id);
                     
-                    // IF NO DATA: 100% Transparent (Invisible)
-                    if (val === null || val === 0) return 'rgba(0,0,0,0)'; 
+                    // A. No Data? -> Faint Gray Outline (20% opacity)
+                    if (val === null || val === 0) return 'rgba(200,200,200, 0.2)';
 
+                    // B. Real Data -> Bright Neon Color (100% opacity)
                     const scale = getScale(mode);
-                    const c = scale(val);
-                    
-                    // IF DATA: Max 30% Opacity. 
-                    // This means even the highest data is 70% transparent.
-                    const opacity = 0.05 + ((val / maxVal) * 0.25); 
-                    
-                    return c ? c.replace('rgb', 'rgba').replace(')', `, ${opacity})`) : 'rgba(0,0,0,0)';
-                });
-                
-                // 4. LOW ALTITUDE (Hugs the surface)
-                globeInstance.current.polygonAltitude((d: any) => {
-                    const val = getVal(d.id);
-                    if (!val) return 0; // Flat
-                    return 0.005 + ((val / maxVal) * 0.05); // Very subtle lift
+                    return scale(val);
                 });
             }
 
