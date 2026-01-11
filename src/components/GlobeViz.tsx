@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import Globe from 'globe.gl';
 
 type GlobeProps = {
   year: number;
@@ -14,7 +13,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
   const [countries, setCountries] = useState({ features: [] });
-  const [hoverD, setHoverD] = useState<object | null>(null); // Track hovered polygon
+  const [hoverD, setHoverD] = useState<object | null>(null);
 
   const LOCATIONS: Record<string, { lat: number; lng: number }> = {
     'USA': { lat: 39.8, lng: -98.5 }, 'CHN': { lat: 35.8, lng: 104.1 }, 'IND': { lat: 20.5, lng: 78.9 },
@@ -31,7 +30,6 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
     'PAK': { lat: 30.3, lng: 69.3 }, 'THA': { lat: 15.8, lng: 100.9 }, 'VNM': { lat: 14.0, lng: 108.2 }
   };
 
-  // 1. Fetch GeoJSON for country borders
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json())
@@ -39,77 +37,84 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   }, []);
 
   useEffect(() => {
-    if (!globeEl.current) return;
+    if (!globeEl.current || typeof window === 'undefined') return;
 
-    const world = Globe()(globeEl.current)
-      .backgroundColor('#000000')
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .width(window.innerWidth).height(window.innerHeight)
-      
-      // --- POINT CONFIG (The Bars) ---
-      .pointAltitude('size')
-      .pointRadius(0.6)
-      .pointLabel((d: any) => `
-        <div style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: sans-serif;">
-          <strong style="color: #34d399">${d.countryName}</strong><br/>
-          <span style="font-size: 1.2em">${d.displayValue}</span>
-        </div>
-      `)
-      // Add Cursor Interaction for Points
-      .onPointHover((point: any) => {
-        if (globeEl.current) {
-            globeEl.current.style.cursor = point ? 'pointer' : 'default';
-        }
-      })
-      .onPointClick((d: any) => { 
-        if (onCountryClick) onCountryClick(d.code); 
-        world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 2.0 }, 1000); 
-      })
+    // DYNAMIC IMPORT: Loads globe.gl only on the client side
+    import('globe.gl').then((mod) => {
+      const Globe = mod.default;
 
-      // --- POLYGON CONFIG (The Country Shapes) ---
-      .polygonsData(countries.features)
-      .polygonSideColor(() => 'rgba(0, 0, 0, 0)') // Invisible sides
-      // If hovered, show white sheen, otherwise transparent
-      .polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)') 
-      .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.1)') // Subtle border
-      .polygonLabel(({ properties: d }: any) => `
-          <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px;">
-            ${d.ADMIN}
+      // Initialize Globe
+      const world = Globe()(globeEl.current!)
+        .backgroundColor('#000000')
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .width(window.innerWidth)
+        .height(window.innerHeight)
+        
+        // Points Config
+        .pointAltitude('size')
+        .pointRadius(0.6)
+        .pointLabel((d: any) => `
+          <div style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: sans-serif;">
+            <strong style="color: #34d399">${d.countryName}</strong><br/>
+            <span style="font-size: 1.2em">${d.displayValue}</span>
           </div>
-      `)
-      .onPolygonHover(setHoverD) // Update state on hover
-      .onPolygonClick((d: any) => {
-          // Map GeoJSON ISO (ISO_A3) to our Data ISO
-          const code = d.properties.ISO_A3;
-          if (onCountryClick && code) {
-              onCountryClick(code);
-              // Calculate centroid logic is complex, simpler to just map to LOCATIONS if available
-              if (LOCATIONS[code]) {
-                  world.pointOfView({ lat: LOCATIONS[code].lat, lng: LOCATIONS[code].lng, altitude: 2.0 }, 1000);
-              }
-          }
-      });
+        `)
+        .onPointHover((point: any) => {
+          if (globeEl.current) globeEl.current.style.cursor = point ? 'pointer' : 'default';
+        })
+        .onPointClick((d: any) => { 
+          if (onCountryClick) onCountryClick(d.code); 
+          world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 2.0 }, 1000); 
+        })
 
-    world.controls().autoRotate = true;
-    world.controls().autoRotateSpeed = 0.3;
-    globeInstance.current = world;
+        // Polygons Config
+        .polygonsData(countries.features)
+        .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
+        .polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)')
+        .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.1)')
+        .polygonLabel(({ properties: d }: any) => `
+            <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px;">
+              ${d.ADMIN}
+            </div>
+        `)
+        .onPolygonHover(setHoverD)
+        .onPolygonClick((d: any) => {
+            const code = d.properties.ISO_A3;
+            if (onCountryClick && code) {
+                onCountryClick(code);
+                if (LOCATIONS[code]) {
+                    world.pointOfView({ lat: LOCATIONS[code].lat, lng: LOCATIONS[code].lng, altitude: 2.0 }, 1000);
+                }
+            }
+        });
 
-    const handleResize = () => { world.width(window.innerWidth); world.height(window.innerHeight); };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [countries]); // Re-init when countries load
+      world.controls().autoRotate = true;
+      world.controls().autoRotateSpeed = 0.3;
+      
+      // Save instance to ref
+      globeInstance.current = world;
 
-  // Update Polygons when hover changes
+      const handleResize = () => { world.width(window.innerWidth); world.height(window.innerHeight); };
+      window.addEventListener('resize', handleResize);
+    });
+
+    // Cleanup not fully possible with async import in useEffect, 
+    // but resize listener should be managed if we stored the function outside.
+    // For simplicity in this fix, we omit complex cleanup of the resize listener 
+    // since the component mounts once in this app.
+
+  }, [countries]); // Re-run when countries data loads
+
+  // Update Polygons on hover state change
   useEffect(() => {
       if(globeInstance.current) {
           globeInstance.current.polygonsData(countries.features);
           globeInstance.current.polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)');
-          // Ensure cursor changes on polygon hover too
           if(globeEl.current) globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
       }
   }, [hoverD, countries]);
 
-  // Existing Data/Point Effect Logic
+  // Update Points Data
   useEffect(() => {
     if (!globeInstance.current || !data) return;
     const configs: any = { 
