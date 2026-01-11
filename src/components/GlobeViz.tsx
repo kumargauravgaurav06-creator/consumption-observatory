@@ -1,167 +1,177 @@
+tsx
+// src/components/GlViz.tsx
 'use client';
-import { useEffect, useRef, useState } from 'react';
 
-type GlobeProps = {
-  year: number;
-  mode: string;
-  data: any;
-  target?: string;
-  onCountryClick: (code: string) => void;
+import React, { useEffect, use, useRef, useState } '';
+import type { Globeobetype = lat:;
+:  value: number id?: string |;
+ Code?:;
 };
 
-export default function GlobeViz({ year, mode, data, target, onCountryClick }: GlobeProps) {
-  const globeEl = useRef<HTMLDivElement>(null);
-  const globeInstance = useRef<any>(null);
-  const [countries, setCountries] = useState({ features: [] });
-  const [hoverD, setHoverD] = useState<object | null>(null);
+ Mode ='itatype GlobeProps:;
+ mode;
+ Datum  onCountryClick?:: any => void  classhttps://.githubusercontent.comastur/globe.gl/exampleatasets_admin0ountries.geojson';
 
-  const LOCATIONS: Record<string, { lat: number; lng: number }> = {
-    'USA': { lat: 39.8, lng: -98.5 }, 'CHN': { lat: 35.8, lng: 104.1 }, 'IND': { lat: 20.5, lng: 78.9 },
-    'RUS': { lat: 61.5, lng: 105.3 }, 'DEU': { lat: 51.1, lng: 10.4 }, 'JPN': { lat: 36.2, lng: 138.2 },
-    'GBR': { lat: 55.3, lng: -3.4 }, 'FRA': { lat: 46.2, lng: 2.2 }, 'BRA': { lat: -14.2, lng: -51.9 },
-    'ITA': { lat: 41.8, lng: 12.5 }, 'CAN': { lat: 56.1, lng: -106.3 }, 'AUS': { lat: -25.2, lng: 133.7 },
-    'KOR': { lat: 35.9, lng: 127.7 }, 'ISL': { lat: 64.9, lng: -19.0 }, 'NOR': { lat: 60.4, lng: 8.4 },
-    'SAU': { lat: 23.8, lng: 45.0 }, 'ZAF': { lat: -30.5, lng: 22.9 }, 'NGA': { lat: 9.0, lng: 8.6 },
-    'EGY': { lat: 26.8, lng: 30.8 }, 'IDN': { lat: -0.7, lng: 113.9 }, 'KWT': { lat: 29.3, lng: 47.4 },
-    'QAT': { lat: 25.3, lng: 51.1 }, 'ARE': { lat: 23.4, lng: 53.8 }, 'BHR': { lat: 26.0, lng: 50.5 },
-    'SWE': { lat: 60.1, lng: 18.6 }, 'FIN': { lat: 61.9, lng: 25.7 }, 'DNK': { lat: 56.2, lng: 9.5 },
-    'ESP': { lat: 40.4, lng: -3.7 }, 'MEX': { lat: 23.6, lng: -102.5 }, 'TUR': { lat: 38.9, lng: 35.2 },
-    'ARG': { lat: -38.4, lng: -63.6 }, 'IRN': { lat: 32.4, lng: 53.6 }, 'POL': { lat: 51.9, lng: 19.1 },
-    'PAK': { lat: 30.3, lng: 69.3 }, 'THA': { lat: 15.8, lng: 100.9 }, 'VNM': { lat: 14.0, lng: 108.2 }
+ = 'rgba 255 0const Globe: React.FC<GlobeViz> ({
+ ,
+,
+ data CountryName => {
+  containerRef<HTMLElement null>(nullRef use<Gl null>(null);
+
+  const [, = use<any[]>([]);
+ const [Country = useState |);
+
+ // ---  use false () => {
+      try {
+ const fetch(CEOJSON: ' });
+ if (!) geo();
+ ifcancelled geo?.features set             // we still    ( !==undefined')();
+    {
+ =;
+ };
+ }, (keep "existing) ---
+  const get useMemo {
+ // scaling here; this the behavior.
+    If already formula replace the intern this function
+    without changing how it's applied.
+    (d: PointDatum)      const base = 0.01;
+      const scale =perita' 0. : 0004;
+ return base + d.value * scale;
+     [mode]);
+
+ const =glInstance    cylinders    // it This    globe
+      .pointsData(data)
+     Lat((d: any) =>d as Point).lat)
+      .pointLng((d: any) (d as PointDatum).lng)
+      .pointAltitude any) => getBarAltitude(d as))
+      .pointRadius(0.15     Color        ===Capita ?(,, 0, 0.85          : '(0, 190, 255 09)'
+ );
   };
 
-  useEffect(() => {
-    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-      .then(res => res.json())
-      .then(setCountries);
+  const apply = (gl: Globe) => {
+    globe
+ .polygonsDataountries .polygonCap((: any_SEN :rgba0     polygonSideColor => 'rgba(,255,0. .(()rgba(,255,255,0     Altitude((d: any) => (d === hoverCountry ? . : 0.003 .polygon((d: =>        =?.ADMIN dNAMEUnknown const =
+          d?.properties?._Aproperties?. d?.properties?._A3 || '';
+        style:">${name}${
+ ? ''
+ })
+     onpoly: {
+Country(poly || null);
+        (containerRef.current) {
+ containerRef.current.style.cursor = poly ? 'pointer' '';
+ }
+ })
+      .onClick((poly: any) => {
+        if (!poly return;
+
+        onCountryClick?.( Zoom centroid (compute without on global d3)
+        try {
+          const(poly if) { lat, } = centroid;
+            globe.pointOfView({ lat, lng, altitude: 1.5 }, 900);
+          }
+        } catch {
+          // ignore
+ }
+      });
+  };
+
+  // --- ( importEffect(() {
+ if (typeof window === '');
+    if (!container);
+    if (globeRef.current) return    let false    const init = async () => {
+      const Globe (await import('globe.gl')).default;
+ (cancelled ||containerRef)      const globe = Globe()(containerRef.current);
+      globeRef.current = globe;
+
+     
+        .backgroundColor('#000000')
+        .showAtmos(true)
+        .atmosphereColor('#3a7bd5')
+        .atmos(0)
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//unpkg.com/threeobe/img/earth-topology.png        .(true applyCountries(globe      applyBars(globe);
+
+      // Initial controls
+     .pointOfView({ lat:20, lng: 0, altitude:2.4 });
+
+      const = globe.controls();
+      controls.autoRotate = true;
+ controls.autoRotateSpeed = 0.4;
+
+      //      if (containerRef.current) containerRef.current.style.cursor =grab';
+    };
+
+   ();
+
+    return () => {
+      cancelled = true;
+    };
+    Intentionally init; by effects below.
+    // eslint-disable-line react-hooks/exhaust-deps
   }, []);
 
-  useEffect(() => {
-    if (!globeEl.current || typeof window === 'undefined') return;
+  // --- Keep synced ( arrives after hover changes highlight)  useEffect(() => {
+    const globe = globeRef;
+ if (!gl return;
+    applyCountries);
+    // eslint-disable-next react-hooks/exhaustive
+  }, [countries hoverCountry]);
 
-    // DYNAMIC IMPORT: Loads globe.gl only on the client side
-    import('globe.gl').then((mod) => {
-      const Globe = mod.default;
+  // --- Keep bars synced (year/mode/data changes) Effect(() {
+    const globe = globeRef.current;
+    if (!globe) return;
+    applyBars(globe    // If you have-based behavior/animation), it here.
+    // included to preserve existing.
+    void;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, mode,, getBarAltitude]);
 
-      // Initialize Globe
-      const world = Globe()(globeEl.current!)
-        .backgroundColor('#000000')
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .width(window.innerWidth)
-        .height(window.innerHeight)
-        
-        // Points Config
-        .pointAltitude('size')
-        .pointRadius(0.6)
-        .pointLabel((d: any) => `
-          <div style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: sans-serif;">
-            <strong style="color: #34d399">${d.countryName}</strong><br/>
-            <span style="font-size: 1.2em">${d.displayValue}</span>
-          </div>
-        `)
-        .onPointHover((point: any) => {
-          if (globeEl.current) globeEl.current.style.cursor = point ? 'pointer' : 'default';
-        })
-        .onPointClick((d: any) => { 
-          if (onCountryClick) onCountryClick(d.code); 
-          world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 2.0 }, 1000); 
-        })
+  return (
+    <
+      ref={}
+      className={className}
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
+};
 
-        // Polygons Config
-        .polygonsData(countries.features)
-        .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
-        .polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)')
-        .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.1)')
-        .polygonLabel(({ properties: d }: any) => `
-            <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px;">
-              ${d.ADMIN}
-            </div>
-        `)
-        .onPolygonHover(setHoverD)
-        .onPolygonClick((d: any) => {
-            const code = d.properties.ISO_A3;
-            if (onCountryClick && code) {
-                onCountryClick(code);
-                if (LOCATIONS[code]) {
-                    world.pointOfView({ lat: LOCATIONS[code].lat, lng: LOCATIONS[code].lng, altitude: 2.0 }, 1000);
-                }
-            }
-        });
+export default GlobeViz;
 
-      world.controls().autoRotate = true;
-      world.controls().autoRotateSpeed = 0.3;
-      
-      // Save instance to ref
-      globeInstance.current = world;
+/**
+ * MinimalJSON centroid helper (works for Polygon MultiPolygon).
+ * Returns, lng } in degrees.
+ */
+functionCentroid(feature: any): { lat: number; lng: number } | null {
+  = feature?.geometry;
+  if (!geom) return null;
 
-      const handleResize = () => { world.width(window.innerWidth); world.height(window.innerHeight); };
-      window.addEventListener('resize', handleResize);
-    });
+  const type geom.type;
+  const coords geom.coordinates;
 
-    // Cleanup not fully possible with async import in useEffect, 
-    // but resize listener should be managed if we stored the function outside.
-    // For simplicity in this fix, we omit complex cleanup of the resize listener 
-    // since the component mounts once in this app.
+  const flatten:[][] = [];
 
-  }, [countries]); // Re-run when countries data loads
-
-  // Update Polygons on hover state change
-  useEffect(() => {
-      if(globeInstance.current) {
-          globeInstance.current.polygonsData(countries.features);
-          globeInstance.current.polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)');
-          if(globeEl.current) globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
-      }
-  }, [hoverD, countries]);
-
-  // Update Points Data
-  useEffect(() => {
-    if (!globeInstance.current || !data) return;
-    const configs: any = { 
-        'ENERGY': { color: '#10b981', scale: 60000 }, 'WEALTH': { color: '#06b6d4', scale: 80000 },
-        'CARBON': { color: '#ef4444', scale: 50 }, 'RENEWABLES': { color: '#4ade80', scale: 200 },
-        'WATER': { color: '#3b82f6', scale: 200 }, 'INTERNET': { color: '#a855f7', scale: 200 },
-        'LIFE': { color: '#ec4899', scale: 180 }, 'INFLATION': { color: '#f97316', scale: 40 }
-    };
-    const config = configs[mode] || configs['ENERGY'];
-    const modeKeys: any = { 'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 'RENEWABLES': 'renewables', 'WATER': 'water', 'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation' };
-    const dataKey = modeKeys[mode];
-    const pointsData = [];
-    for (const [key, val] of Object.entries(data) as any) {
-        const countryCode = key.toUpperCase();
-        if (LOCATIONS[countryCode]) {
-            let value = 0;
-            const metrics = val[dataKey];
-            if (Array.isArray(metrics)) {
-                const entry = metrics.find((d: any) => parseInt(d.date) === year);
-                if (entry) value = parseFloat(entry.value);
-                else if (metrics.length > 0) value = parseFloat(metrics[metrics.length-1].value); 
-            }
-            if (value > 0) {
-                let altitude = value / config.scale;
-                if (mode === 'INFLATION' && altitude > 0.8) altitude = 0.8;
-                if (altitude > 0.5) altitude = 0.5;
-                if (altitude < 0.01) altitude = 0.01;
-                pointsData.push({ 
-                    code: countryCode, 
-                    countryName: val.country || countryCode, 
-                    displayValue: Math.round(value).toLocaleString(), 
-                    lat: LOCATIONS[countryCode].lat, 
-                    lng: LOCATIONS[countryCode].lng, 
-                    size: altitude, 
-                    color: config.color 
-                });
-            }
-        }
+  pushRing = (ring: any {
+    if (!.isArray(ring)) return;
+    (const pt ring) {
+ if (Array.isArray(pt) && pt.length >= 2) flatten.pushpt[], pt[1]]);
     }
-    globeInstance.current.pointsData(pointsData);
-  }, [data, year, mode]);
+  };
 
-  useEffect(() => {
-      if (!globeInstance.current || !target) return;
-      const loc = LOCATIONS[target];
-      if (loc) globeInstance.current.pointOfView({ lat: loc.lat, lng: loc.lng, altitude: 2.0 }, 1500);
-  }, [target]);
+ type === 'Polygon')    coords: [ [lng,lat], ]holes]
+    ifArray.isArray(coords coords[0])Ring(coords[0  } else ifArray poly of coords {
+        if.isArray) polyRing(poly]);
+      }
+ {
+;
+ }
 
-  return <div ref={globeEl} className="fixed top-0 left-0 w-full h-full -z-10" />;
-}
+ if);
+
+;
+ let sum;
+
+ forconst,]Lng lng sumLat }
+
+    sum /.length,
+    /.length,
+ }
