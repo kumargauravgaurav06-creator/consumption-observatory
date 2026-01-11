@@ -1,9 +1,12 @@
 {
   "USA": {
     "name": "United States",
-    "energy": [{ "date": "2022", "value": "12551" }, { "date": "2021", "value": "12200" }],
-    "gdp": [{ "date": "2022", "value": "76398" }, { "date": "2021", "value": "70248" }],
+    "energy": [{ "date": "2022", "value": "12551" }],
+    "gdp": [{ "date": "2022", "value": "76398" }],
     "co2": [{ "date": "2022", "value": "13.8" }],
+    "renewables": [{ "date": "2022", "value": "21.5" }],
+    "water": [{ "date": "2022", "value": "99.2" }],
+    "internet": [{ "date": "2022", "value": "91.8" }],
     "life": [{ "date": "2022", "value": "77.5" }],
     "inflation": [{ "date": "2022", "value": "8.0" }]
   },
@@ -12,6 +15,9 @@
     "energy": [{ "date": "2022", "value": "5500" }],
     "gdp": [{ "date": "2022", "value": "12556" }],
     "co2": [{ "date": "2022", "value": "8.0" }],
+    "renewables": [{ "date": "2022", "value": "29.4" }],
+    "water": [{ "date": "2022", "value": "96.0" }],
+    "internet": [{ "date": "2022", "value": "75.6" }],
     "life": [{ "date": "2022", "value": "78.2" }],
     "inflation": [{ "date": "2022", "value": "2.0" }]
   },
@@ -20,6 +26,9 @@
     "energy": [{ "date": "2022", "value": "1000" }],
     "gdp": [{ "date": "2022", "value": "2410" }],
     "co2": [{ "date": "2022", "value": "1.9" }],
+    "renewables": [{ "date": "2022", "value": "42.0" }],
+    "water": [{ "date": "2022", "value": "94.0" }],
+    "internet": [{ "date": "2022", "value": "46.3" }],
     "life": [{ "date": "2022", "value": "67.2" }],
     "inflation": [{ "date": "2022", "value": "6.7" }]
   },
@@ -28,6 +37,9 @@
     "energy": [{ "date": "2022", "value": "6500" }],
     "gdp": [{ "date": "2022", "value": "48717" }],
     "co2": [{ "date": "2022", "value": "7.8" }],
+    "renewables": [{ "date": "2022", "value": "45.0" }],
+    "water": [{ "date": "2022", "value": "100" }],
+    "internet": [{ "date": "2022", "value": "91.0" }],
     "life": [{ "date": "2022", "value": "80.9" }],
     "inflation": [{ "date": "2022", "value": "6.9" }]
   },
@@ -36,6 +48,9 @@
     "energy": [{ "date": "2022", "value": "2800" }],
     "gdp": [{ "date": "2022", "value": "8917" }],
     "co2": [{ "date": "2022", "value": "2.0" }],
+    "renewables": [{ "date": "2022", "value": "84.0" }],
+    "water": [{ "date": "2022", "value": "98.0" }],
+    "internet": [{ "date": "2022", "value": "81.0" }],
     "life": [{ "date": "2022", "value": "72.8" }],
     "inflation": [{ "date": "2022", "value": "9.3" }]
   }

@@ -39,9 +39,11 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   }, [data, year, mode]);
 
   useEffect(() => {
+    // Fetch borders - using a reliable CDN
     fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
        .then(r => r.json())
-       .then(d => { if (d && d.features) setGeoJson(d.features); });
+       .then(d => { if (d && d.features) setGeoJson(d.features); })
+       .catch(err => console.error("GeoJSON failed to load", err));
   }, []);
 
   // 2. RENDER
@@ -56,12 +58,11 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (!globeInstance.current) {
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
-                    .backgroundColor('#000000')
+                    .backgroundColor('rgba(0,0,0,0)') // Transparent Background
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#7ca4ff')
                     .atmosphereAltitude(0.12)
-                    // Simple interaction: Change cursor on hover (Safe)
                     .onPolygonHover((hoverD: any) => {
                         if (globeEl.current) {
                             globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
@@ -73,7 +74,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 globeInstance.current.controls().autoRotateSpeed = 0.3;
             }
 
-            // 3. COLOR PALETTE (For Borders Only)
+            // 3. COLORS
             const getBaseColor = (metric: string) => {
                 switch(metric) {
                     case 'ENERGY': return '0, 255, 100';    // Emerald
@@ -97,30 +98,22 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 };
                 const key = keyMap[mode];
                 const metrics = data[id][key];
-                if (!Array.isArray(metrics)) return null;
+                if (!metrics || !Array.isArray(metrics)) return null;
                 const entry = metrics.find((d: any) => parseInt(d.date) === year);
                 return entry ? parseFloat(entry.value) : null;
             };
 
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
-
-                // A. INVISIBLE SIDES
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
-
-                // B. INVISIBLE CAP (This removes the hue/fill completely)
-                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)');
-
-                // C. SOLID BORDER (Data is shown here)
+                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)'); // Crystal Clear
+                
                 globeInstance.current.polygonStrokeColor((d: any) => {
                     const val = getVal(d.id);
-                    // Faint white if no data, Solid color if data exists
-                    if (val === null || val === 0) return 'rgba(255,255,255, 0.15)'; 
+                    if (val === null) return 'rgba(255,255,255, 0.1)'; 
                     const baseRgb = getBaseColor(mode);
                     return `rgba(${baseRgb}, 1)`;
                 });
-
-                // D. LOW ALTITUDE
                 globeInstance.current.polygonAltitude(0.006);
             }
 
