@@ -1,7 +1,9 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import GlobeViz from '@/components/GlobeViz';
-import dataset from '@/data/dataset.json';
+
+// FIX: Using relative paths (../) instead of (@/) to prevent build errors
+import GlobeViz from '../components/GlobeViz'; 
+import dataset from '../data/dataset.json';
 
 // --- DATA TYPES ---
 type MetricType = 'ENERGY' | 'WEALTH' | 'CARBON' | 'RENEWABLES' | 'WATER' | 'INTERNET' | 'LIFE' | 'INFLATION';
@@ -20,17 +22,15 @@ const METRICS: Record<MetricType, { label: string; unit: string; color: string }
 export default function Home() {
   const [year, setYear] = useState(2022);
   const [mode, setMode] = useState<MetricType>('ENERGY');
-  const [selectedCountry, setSelectedCountry] = useState<string>('USA'); // Default to USA
+  const [selectedCountry, setSelectedCountry] = useState<string>('USA'); 
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => { setIsClient(true); }, []);
 
-  // --- 1. SMART INSIGHT CALCULATOR ---
-  // This hook calculates Rank, Trend, and Value dynamically
+  // --- SMART INSIGHT CALCULATOR ---
   const stats = useMemo(() => {
     if (!dataset) return null;
     
-    // Map mode to data key
     const keyMap: any = { 
         'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
         'RENEWABLES': 'renewables', 'WATER': 'water', 
@@ -38,25 +38,21 @@ export default function Home() {
     };
     const key = keyMap[mode];
     
-    // 1. Get Current Value
     const countryData = (dataset as any)[selectedCountry];
     const metrics = countryData ? countryData[key] : [];
     const currentEntry = metrics?.find((d: any) => parseInt(d.date) === year);
     const currentValue = currentEntry ? parseFloat(currentEntry.value) : 0;
 
-    // 2. Get Previous Year (For Trend)
     const prevEntry = metrics?.find((d: any) => parseInt(d.date) === year - 1);
     const prevValue = prevEntry ? parseFloat(prevEntry.value) : 0;
     const trend = currentValue - prevValue;
     const trendPercent = prevValue !== 0 ? ((trend / prevValue) * 100).toFixed(1) : '0';
 
-    // 3. Calculate Global Rank
-    // We sort all countries by the current metric to find where this one stands
     const allValues = Object.keys(dataset).map(code => {
         const cMetrics = (dataset as any)[code][key];
         const cEntry = cMetrics?.find((d: any) => parseInt(d.date) === year);
         return { code, val: cEntry ? parseFloat(cEntry.value) : -1 };
-    }).filter(x => x.val !== -1).sort((a, b) => b.val - a.val); // Sort High to Low
+    }).filter(x => x.val !== -1).sort((a, b) => b.val - a.val);
 
     const rank = allValues.findIndex(x => x.code === selectedCountry) + 1;
     const totalCountries = allValues.length;
@@ -76,7 +72,7 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen bg-black overflow-hidden text-white font-sans selection:bg-cyan-500/30">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className="absolute top-6 left-8 z-10">
         <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
           PULSE.IO
@@ -84,21 +80,17 @@ export default function Home() {
         <p className="text-xs text-gray-500 mt-1 font-mono tracking-widest">GLOBAL INTELLIGENCE UNIT</p>
       </header>
 
-      {/* --- LEFT PANEL: SMART DATA CARD --- */}
+      {/* LEFT PANEL: SMART CARD */}
       <div className="absolute top-32 left-8 z-10 w-80">
         <div className="backdrop-blur-xl bg-black/40 border border-white/10 p-6 rounded-2xl shadow-2xl">
-            
-            {/* Country Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Target Analysis</p>
                     <h2 className="text-3xl font-bold text-white leading-none">{stats?.name}</h2>
                 </div>
-                {/* Dynamic Flag Placeholder or Icon */}
                 <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${METRICS[mode].color.replace('text-', 'text-')}`}></div>
             </div>
 
-            {/* Main Big Number */}
             <div className="mb-6">
                 <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-mono font-light text-white">
@@ -113,10 +105,7 @@ export default function Home() {
                 </p>
             </div>
 
-            {/* --- INSIGHT GRID --- */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
-                
-                {/* Insight 1: Global Rank */}
                 <div>
                     <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Global Rank</p>
                     <div className="flex items-baseline gap-1">
@@ -124,8 +113,6 @@ export default function Home() {
                         <span className="text-xs text-gray-500">/ {stats?.total}</span>
                     </div>
                 </div>
-
-                {/* Insight 2: Annual Trend */}
                 <div>
                     <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Since Last Year</p>
                     <div className={`flex items-center gap-1 font-mono text-sm font-bold ${stats?.trend && stats.trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -133,12 +120,11 @@ export default function Home() {
                         <span>{stats?.trendPercent}%</span>
                     </div>
                 </div>
-
             </div>
         </div>
       </div>
 
-      {/* --- RIGHT PANEL: METRIC SELECTOR --- */}
+      {/* RIGHT PANEL: METRIC SELECTOR */}
       <div className="absolute top-6 right-8 z-10 flex flex-col gap-2 items-end">
         <div className="grid grid-cols-2 gap-2">
             {(Object.keys(METRICS) as MetricType[]).map((m) => (
@@ -157,7 +143,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- BOTTOM: TIMELINE --- */}
+      {/* BOTTOM: TIMELINE */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-8">
         <div className="flex items-center gap-6 backdrop-blur-md bg-black/30 border border-white/10 px-6 py-4 rounded-full">
             <button 
@@ -166,7 +152,6 @@ export default function Home() {
             >
                 ◀
             </button>
-            
             <div className="flex-1 relative">
                 <input 
                     type="range" 
@@ -182,7 +167,6 @@ export default function Home() {
                     <span>2022</span>
                 </div>
             </div>
-
             <button 
                 onClick={() => setYear(y => Math.min(2022, y + 1))}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
@@ -192,7 +176,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- 3D GLOBE --- */}
+      {/* 3D GLOBE */}
       <GlobeViz 
         year={year} 
         mode={mode} 
