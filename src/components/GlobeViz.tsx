@@ -15,6 +15,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const [countries, setCountries] = useState({ features: [] });
   const [hoverD, setHoverD] = useState<object | null>(null);
 
+  // Hardcoded locations for reliable camera zooming
   const LOCATIONS: Record<string, { lat: number; lng: number }> = {
     'USA': { lat: 39.8, lng: -98.5 }, 'CHN': { lat: 35.8, lng: 104.1 }, 'IND': { lat: 20.5, lng: 78.9 },
     'RUS': { lat: 61.5, lng: 105.3 }, 'DEU': { lat: 51.1, lng: 10.4 }, 'JPN': { lat: 36.2, lng: 138.2 },
@@ -30,14 +31,21 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
     'PAK': { lat: 30.3, lng: 69.3 }, 'THA': { lat: 15.8, lng: 100.9 }, 'VNM': { lat: 14.0, lng: 108.2 }
   };
 
+  // 1. Fetch Country Geometry (Borders)
   useEffect(() => {
+    // This URL is the standard standard for country shapes
     fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json())
-      .then(setCountries);
+      .then(data => {
+        setCountries(data);
+      })
+      .catch(err => console.error("Error loading map data:", err));
   }, []);
 
+  // 2. Initialize Globe (Run Only Once)
   useEffect(() => {
     if (!globeEl.current || typeof window === 'undefined') return;
+    if (globeInstance.current) return; // Prevent double-loading
 
     import('globe.gl').then((mod) => {
       const Globe = mod.default;
@@ -48,17 +56,23 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
         .width(window.innerWidth)
         .height(window.innerHeight)
         
-        // Polygons (Countries)
-        .polygonsData(countries.features)
-        .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
-        .polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)')
-        .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.1)')
+        // --- VISUALS ---
+        .showAtmosphere(true)
+        .atmosphereColor('#3a7bd5')
+        .atmosphereAltitude(0.15)
+
+        // --- POLYGONS (Borders) ---
+        // Start empty, we update this in the next useEffect when data loads
+        .polygonsData([]) 
+        .polygonSideColor(() => 'rgba(0,0,0,0)')
+        .polygonStrokeColor(() => 'rgba(255,255,255,0.2)') // Faint white borders
+        .polygonCapColor(() => 'rgba(0,0,0,0)') // Transparent inside by default
+        .onPolygonHover(setHoverD)
         .polygonLabel(({ properties: d }: any) => `
-            <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px;">
+            <div style="background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
               ${d.ADMIN}
             </div>
         `)
-        .onPolygonHover(setHoverD)
         .onPolygonClick((d: any) => {
             const code = d.properties.ISO_A3;
             if (onCountryClick && code) {
@@ -69,17 +83,17 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             }
         })
 
-        // Points (Data)
+        // --- POINTS (Data Bars) ---
         .pointAltitude('size')
-        .pointRadius(0.6)
+        .pointRadius(0.5)
         .pointLabel((d: any) => `
-          <div style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: sans-serif;">
+          <div style="background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: monospace;">
             <strong style="color: #34d399">${d.countryName}</strong><br/>
-            <span style="font-size: 1.2em">${d.displayValue}</span>
+            <span style="font-size: 1.2em; font-weight:bold;">${d.displayValue}</span>
           </div>
         `)
         .onPointHover((point: any) => {
-          if (globeEl.current) globeEl.current.style.cursor = point ? 'pointer' : 'default';
+           if (globeEl.current) globeEl.current.style.cursor = point ? 'pointer' : 'default';
         })
         .onPointClick((d: any) => { 
           if (onCountryClick) onCountryClick(d.code); 
@@ -87,25 +101,37 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
         });
 
       world.controls().autoRotate = true;
-      world.controls().autoRotateSpeed = 0.3;
-      
+      world.controls().autoRotateSpeed = 0.5;
       globeInstance.current = world;
 
       const handleResize = () => { world.width(window.innerWidth); world.height(window.innerHeight); };
       window.addEventListener('resize', handleResize);
     });
-  }, [countries]);
+  }, []);
 
+  // 3. REACT TO DATA LOADING (This fixes the "missing borders" issue)
   useEffect(() => {
-      if(globeInstance.current) {
-          globeInstance.current.polygonsData(countries.features);
-          globeInstance.current.polygonCapColor((d: any) => d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)');
-          if(globeEl.current) globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
-      }
-  }, [hoverD, countries]);
+    if (globeInstance.current && countries.features && countries.features.length > 0) {
+        // Feed the loaded country data into the globe
+        globeInstance.current.polygonsData(countries.features);
+        
+        // Define the Hover Effect
+        globeInstance.current.polygonCapColor((d: any) => 
+            d === hoverD ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0)'
+        );
 
+        // Define the Border Color
+        globeInstance.current.polygonStrokeColor(() => 'rgba(255, 255, 255, 0.2)');
+
+        // Cursor logic
+        if(globeEl.current) globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
+    }
+  }, [countries, hoverD]); // Re-run whenever countries load or hover changes
+
+  // 4. Update Data Points (Bars)
   useEffect(() => {
     if (!globeInstance.current || !data) return;
+    
     const configs: any = { 
         'ENERGY': { color: '#10b981', scale: 60000 }, 'WEALTH': { color: '#06b6d4', scale: 80000 },
         'CARBON': { color: '#ef4444', scale: 50 }, 'RENEWABLES': { color: '#4ade80', scale: 200 },
@@ -115,6 +141,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
     const config = configs[mode] || configs['ENERGY'];
     const modeKeys: any = { 'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 'RENEWABLES': 'renewables', 'WATER': 'water', 'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation' };
     const dataKey = modeKeys[mode];
+    
     const pointsData = [];
     for (const [key, val] of Object.entries(data) as any) {
         const countryCode = key.toUpperCase();
@@ -124,13 +151,18 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (Array.isArray(metrics)) {
                 const entry = metrics.find((d: any) => parseInt(d.date) === year);
                 if (entry) value = parseFloat(entry.value);
-                else if (metrics.length > 0) value = parseFloat(metrics[metrics.length-1].value); 
+                else {
+                     const sorted = [...metrics].sort((a:any, b:any) => parseInt(a.date) - parseInt(b.date));
+                     const last = sorted[sorted.length - 1];
+                     if(last) value = parseFloat(last.value);
+                }
             }
             if (value > 0) {
                 let altitude = value / config.scale;
-                if (mode === 'INFLATION' && altitude > 0.8) altitude = 0.8;
-                if (altitude > 0.5) altitude = 0.5;
-                if (altitude < 0.01) altitude = 0.01;
+                if (mode === 'INFLATION') altitude = Math.min(altitude, 0.8);
+                if (mode === 'WATER' || mode === 'INTERNET') altitude = (value / 100) * 0.5;
+                altitude = Math.max(0.01, Math.min(altitude, 1.5)); 
+
                 pointsData.push({ 
                     code: countryCode, 
                     countryName: val.country || countryCode, 
@@ -146,6 +178,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
     globeInstance.current.pointsData(pointsData);
   }, [data, year, mode]);
 
+  // 5. Target Lock (Search)
   useEffect(() => {
       if (!globeInstance.current || !target) return;
       const loc = LOCATIONS[target];
