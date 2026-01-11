@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 
-// FIX: Using relative paths (../) to find the files correctly
+// FIX: Using relative paths (../)
 import GlobeViz from '../components/GlobeViz'; 
 import dataset from '../data/dataset.json';
 
@@ -27,64 +27,62 @@ export default function Home() {
 
   useEffect(() => { setIsClient(true); }, []);
 
-  // --- SMART INSIGHT CALCULATOR ---
-  const stats = useMemo(() => {
-    // Safety check for empty dataset
-    if (!dataset || Object.keys(dataset).length === 0) return {
-        value: 0, name: 'Loading...', rank: 0, total: 0, trend: 0, trendPercent: '0'
-    };
-    
+  // --- HELPER: GET NEAREST VALUE ---
+  const getMetricValue = (code: string, currentYear: number, metricKey: string) => {
+      const d = (dataset as any)[code];
+      if (!d || !d[metricKey]) return 0;
+      const metrics = d[metricKey];
+      // Sort by distance to year
+      const sorted = [...metrics].sort((a: any, b: any) => 
+          Math.abs(parseInt(a.date) - currentYear) - Math.abs(parseInt(b.date) - currentYear)
+      );
+      return sorted[0] ? parseFloat(sorted[0].value) : 0;
+  };
+
+  // --- 1. LEADERBOARD CALCULATOR ---
+  const leaderboard = useMemo(() => {
+    if (!dataset) return [];
     const keyMap: any = { 
         'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
         'RENEWABLES': 'renewables', 'WATER': 'water', 
         'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation' 
     };
     const key = keyMap[mode];
-    
-    const countryData = (dataset as any)[selectedCountry];
-    const metrics = countryData ? countryData[key] : [];
-    
-    // Safety check: metrics might be undefined
-    if (!metrics || metrics.length === 0) return { 
-        value: 0, name: countryData?.name || selectedCountry, rank: 0, total: 0, trend: 0, trendPercent: '0' 
+
+    // Calculate value for EVERY country and sort
+    return Object.keys(dataset).map(code => ({
+        code,
+        name: (dataset as any)[code].name,
+        value: getMetricValue(code, year, key)
+    }))
+    .sort((a, b) => b.value - a.value) // Sort High to Low
+    .slice(0, 5); // Take Top 5
+  }, [year, mode]);
+
+  // --- 2. SELECTED COUNTRY STATS ---
+  const stats = useMemo(() => {
+    if (!dataset) return null;
+    const keyMap: any = { 
+        'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
+        'RENEWABLES': 'renewables', 'WATER': 'water', 
+        'INTERNET': 'internet', 'LIFE': 'life', 'INFLATION': 'inflation' 
     };
-
-    // NEAREST YEAR LOGIC
-    // Sort entries by how close they are to the selected year
-    const sortedByDate = [...metrics].sort((a: any, b: any) => 
-        Math.abs(parseInt(a.date) - year) - Math.abs(parseInt(b.date) - year)
-    );
+    const key = keyMap[mode];
+    const d = (dataset as any)[selectedCountry];
     
-    const currentEntry = sortedByDate[0];
-    const currentValue = currentEntry ? parseFloat(currentEntry.value) : 0;
+    if (!d) return { value: 0, name: selectedCountry, rank: 0, total: 0, trend: 0, trendPercent: '0' };
 
-    // Trend Logic: Try 1 year ago, or 5 years ago if 1 year missing
-    const prevEntry = metrics.find((d: any) => parseInt(d.date) === year - 1) 
-                   || metrics.find((d: any) => parseInt(d.date) === year - 5);
+    const val = getMetricValue(selectedCountry, year, key);
+    const prevVal = getMetricValue(selectedCountry, year - 1, key) || getMetricValue(selectedCountry, year - 5, key);
+    
+    // Rank Logic
+    const allVals = Object.keys(dataset).map(c => getMetricValue(c, year, key)).sort((a, b) => b - a);
+    const rank = allVals.indexOf(val) + 1;
 
-    const prevValue = prevEntry ? parseFloat(prevEntry.value) : currentValue; 
-    const trend = currentValue - prevValue;
-    const trendPercent = prevValue !== 0 ? ((trend / prevValue) * 100).toFixed(1) : '0';
+    const trend = val - prevVal;
+    const trendPercent = prevVal !== 0 ? ((trend / prevVal) * 100).toFixed(1) : '0';
 
-    // Global Rank Logic
-    const allValues = Object.keys(dataset).map(code => {
-        const cMetrics = (dataset as any)[code][key];
-        const cSorted = cMetrics ? [...cMetrics].sort((a: any, b: any) => Math.abs(parseInt(a.date) - year) - Math.abs(parseInt(b.date) - year)) : [];
-        const cEntry = cSorted[0];
-        return { code, val: cEntry ? parseFloat(cEntry.value) : -1 };
-    }).filter(x => x.val !== -1).sort((a, b) => b.val - a.val);
-
-    const rank = allValues.findIndex(x => x.code === selectedCountry) + 1;
-    const totalCountries = allValues.length;
-
-    return { 
-        value: currentValue, 
-        name: countryData?.name || selectedCountry, 
-        rank, 
-        total: totalCountries,
-        trend,
-        trendPercent
-    };
+    return { value: val, name: d.name, rank, total: allVals.length, trend, trendPercent };
   }, [year, mode, selectedCountry]);
 
   if (!isClient) return null;
@@ -120,9 +118,6 @@ export default function Home() {
                         {METRICS[mode].unit}
                     </span>
                 </div>
-                <p className={`text-xs font-mono mt-1 ${METRICS[mode].color} opacity-80`}>
-                    MODE: {METRICS[mode].label.toUpperCase()}
-                </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
@@ -134,7 +129,7 @@ export default function Home() {
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Since Last Year</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trend</p>
                     <div className={`flex items-center gap-1 font-mono text-sm font-bold ${stats?.trend && stats.trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         <span>{stats?.trend && stats.trend >= 0 ? '▲' : '▼'}</span>
                         <span>{stats?.trendPercent}%</span>
@@ -144,8 +139,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: METRIC SELECTOR */}
-      <div className="absolute top-6 right-8 z-10 flex flex-col gap-2 items-end pointer-events-none">
+      {/* RIGHT PANEL: LEADERBOARD & CONTROLS */}
+      <div className="absolute top-6 right-8 z-10 flex flex-col gap-6 items-end pointer-events-none">
+        
+        {/* Metric Selectors */}
         <div className="grid grid-cols-2 gap-2 pointer-events-auto">
             {(Object.keys(METRICS) as MetricType[]).map((m) => (
             <button
@@ -161,6 +158,31 @@ export default function Home() {
             </button>
             ))}
         </div>
+
+        {/* LEADERBOARD CARD */}
+        <div className="w-64 backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-xl pointer-events-auto">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/10">
+                Top Leaders ({year})
+            </h3>
+            <div className="flex flex-col gap-2">
+                {leaderboard.map((item, i) => (
+                    <div 
+                        key={item.code}
+                        onClick={() => setSelectedCountry(item.code)}
+                        className={`group flex items-center justify-between p-2 rounded hover:bg-white/10 cursor-pointer transition-all ${selectedCountry === item.code ? 'bg-white/10 border-l-2 border-cyan-400' : ''}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="font-mono text-xs text-gray-500 w-3">{i + 1}</span>
+                            <span className="text-sm font-bold text-gray-200 group-hover:text-white">{item.name}</span>
+                        </div>
+                        <span className={`text-xs font-mono ${METRICS[mode].color}`}>
+                            {item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </div>
+
       </div>
 
       {/* BOTTOM: TIMELINE */}
