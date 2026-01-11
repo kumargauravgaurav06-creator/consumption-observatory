@@ -95,10 +95,9 @@ export default function Home() {
         <p className="text-[10px] md:text-xs text-gray-500 mt-1 font-mono tracking-widest">GLOBAL INTELLIGENCE UNIT</p>
       </header>
 
-      {/* METRIC SELECTOR: Horizontal Scroll on Mobile / Vertical on Desktop */}
+      {/* METRIC SELECTOR */}
       <div className="absolute top-16 left-0 w-full px-4 md:top-6 md:right-8 md:left-auto md:w-auto z-10 pointer-events-none flex flex-col items-end gap-6">
         
-        {/* Buttons container */}
         <div className="flex flex-row overflow-x-auto w-full md:w-auto md:grid md:grid-cols-2 gap-2 pointer-events-auto pb-2 md:pb-0 no-scrollbar">
             {(Object.keys(METRICS) as MetricType[]).map((m) => (
             <button
@@ -115,7 +114,7 @@ export default function Home() {
             ))}
         </div>
 
-        {/* LEADERBOARD: Hidden on Mobile, Visible on Desktop */}
+        {/* LEADERBOARD */}
         <div className="hidden md:block w-64 backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-xl pointer-events-auto">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/10">
                 Top Leaders ({year})
@@ -140,7 +139,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SMART CARD: Bottom on Mobile / Top-Left on Desktop */}
+      {/* SMART CARD */}
       <div className="absolute bottom-24 left-4 right-4 md:top-32 md:left-8 md:right-auto md:bottom-auto md:w-80 z-10 pointer-events-none">
         <div className="backdrop-blur-xl bg-black/60 md:bg-black/40 border border-white/10 p-4 md:p-6 rounded-2xl shadow-2xl pointer-events-auto">
             <div className="flex items-center justify-between mb-2 md:mb-4">
@@ -181,7 +180,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* TIMELINE: Bottom Fixed */}
+      {/* TIMELINE */}
       <div className="absolute bottom-6 left-0 w-full px-4 md:bottom-10 z-10 pointer-events-none">
         <div className="flex items-center gap-4 md:gap-6 backdrop-blur-md bg-black/60 md:bg-black/30 border border-white/10 px-4 py-3 md:px-6 md:py-4 rounded-full max-w-2xl mx-auto pointer-events-auto">
             <button 
@@ -214,7 +213,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 3D GLOBE - CONNECTED TO TARGET */}
+      {/* 3D GLOBE - TARGET CONNECTED */}
       <GlobeViz 
         year={year} 
         mode={mode} 
