@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 
-// FIX: Using relative paths (../) instead of (@/) to prevent build errors
+// FIX: Using relative paths (../) to find the files correctly
 import GlobeViz from '../components/GlobeViz'; 
 import dataset from '../data/dataset.json';
 
@@ -29,7 +29,10 @@ export default function Home() {
 
   // --- SMART INSIGHT CALCULATOR ---
   const stats = useMemo(() => {
-    if (!dataset) return null;
+    // Safety check: if dataset is empty, return defaults to prevent crash
+    if (!dataset || Object.keys(dataset).length === 0) return {
+        value: 0, name: 'Loading...', rank: 0, total: 0, trend: 0, trendPercent: '0'
+    };
     
     const keyMap: any = { 
         'ENERGY': 'energy', 'WEALTH': 'gdp', 'CARBON': 'co2', 
@@ -40,10 +43,16 @@ export default function Home() {
     
     const countryData = (dataset as any)[selectedCountry];
     const metrics = countryData ? countryData[key] : [];
-    const currentEntry = metrics?.find((d: any) => parseInt(d.date) === year);
+    
+    // Safety check: metrics might be undefined for some countries
+    if (!metrics) return { 
+        value: 0, name: countryData?.name || selectedCountry, rank: 0, total: 0, trend: 0, trendPercent: '0' 
+    };
+
+    const currentEntry = metrics.find((d: any) => parseInt(d.date) === year);
     const currentValue = currentEntry ? parseFloat(currentEntry.value) : 0;
 
-    const prevEntry = metrics?.find((d: any) => parseInt(d.date) === year - 1);
+    const prevEntry = metrics.find((d: any) => parseInt(d.date) === year - 1);
     const prevValue = prevEntry ? parseFloat(prevEntry.value) : 0;
     const trend = currentValue - prevValue;
     const trendPercent = prevValue !== 0 ? ((trend / prevValue) * 100).toFixed(1) : '0';
@@ -70,10 +79,11 @@ export default function Home() {
   if (!isClient) return null;
 
   return (
-    <main className="relative w-full h-screen bg-black overflow-hidden text-white font-sans selection:bg-cyan-500/30">
+    // FIX IS HERE: Changed "bg-black" to "bg-transparent"
+    <main className="relative w-full h-screen bg-transparent overflow-hidden text-white font-sans selection:bg-cyan-500/30">
       
       {/* HEADER */}
-      <header className="absolute top-6 left-8 z-10">
+      <header className="absolute top-6 left-8 z-10 pointer-events-none">
         <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
           PULSE.IO
         </h1>
@@ -81,8 +91,8 @@ export default function Home() {
       </header>
 
       {/* LEFT PANEL: SMART CARD */}
-      <div className="absolute top-32 left-8 z-10 w-80">
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 p-6 rounded-2xl shadow-2xl">
+      <div className="absolute top-32 left-8 z-10 w-80 pointer-events-none">
+        <div className="backdrop-blur-xl bg-black/40 border border-white/10 p-6 rounded-2xl shadow-2xl pointer-events-auto">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Target Analysis</p>
@@ -125,8 +135,8 @@ export default function Home() {
       </div>
 
       {/* RIGHT PANEL: METRIC SELECTOR */}
-      <div className="absolute top-6 right-8 z-10 flex flex-col gap-2 items-end">
-        <div className="grid grid-cols-2 gap-2">
+      <div className="absolute top-6 right-8 z-10 flex flex-col gap-2 items-end pointer-events-none">
+        <div className="grid grid-cols-2 gap-2 pointer-events-auto">
             {(Object.keys(METRICS) as MetricType[]).map((m) => (
             <button
                 key={m}
@@ -144,8 +154,8 @@ export default function Home() {
       </div>
 
       {/* BOTTOM: TIMELINE */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-8">
-        <div className="flex items-center gap-6 backdrop-blur-md bg-black/30 border border-white/10 px-6 py-4 rounded-full">
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-8 pointer-events-none">
+        <div className="flex items-center gap-6 backdrop-blur-md bg-black/30 border border-white/10 px-6 py-4 rounded-full pointer-events-auto">
             <button 
                 onClick={() => setYear(y => Math.max(2000, y - 1))}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
