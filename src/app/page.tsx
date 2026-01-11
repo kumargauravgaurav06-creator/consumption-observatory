@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 
-// FIX: Using relative paths (../)
+// FIX: Relative paths
 import GlobeViz from '../components/GlobeViz'; 
 import dataset from '../data/dataset.json';
 
@@ -32,7 +32,6 @@ export default function Home() {
       const d = (dataset as any)[code];
       if (!d || !d[metricKey]) return 0;
       const metrics = d[metricKey];
-      // Sort by distance to year
       const sorted = [...metrics].sort((a: any, b: any) => 
           Math.abs(parseInt(a.date) - currentYear) - Math.abs(parseInt(b.date) - currentYear)
       );
@@ -49,14 +48,13 @@ export default function Home() {
     };
     const key = keyMap[mode];
 
-    // Calculate value for EVERY country and sort
     return Object.keys(dataset).map(code => ({
         code,
         name: (dataset as any)[code].name,
         value: getMetricValue(code, year, key)
     }))
-    .sort((a, b) => b.value - a.value) // Sort High to Low
-    .slice(0, 5); // Take Top 5
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
   }, [year, mode]);
 
   // --- 2. SELECTED COUNTRY STATS ---
@@ -75,7 +73,6 @@ export default function Home() {
     const val = getMetricValue(selectedCountry, year, key);
     const prevVal = getMetricValue(selectedCountry, year - 1, key) || getMetricValue(selectedCountry, year - 5, key);
     
-    // Rank Logic
     const allVals = Object.keys(dataset).map(c => getMetricValue(c, year, key)).sort((a, b) => b - a);
     const rank = allVals.indexOf(val) + 1;
 
@@ -90,65 +87,24 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen bg-transparent overflow-hidden text-white font-sans selection:bg-cyan-500/30">
       
-      {/* HEADER */}
-      <header className="absolute top-6 left-8 z-10 pointer-events-none">
-        <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+      {/* HEADER: Smaller on Mobile */}
+      <header className="absolute top-4 left-4 md:top-6 md:left-8 z-10 pointer-events-none">
+        <h1 className="text-2xl md:text-4xl font-bold tracking-tighter bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
           PULSE.IO
         </h1>
-        <p className="text-xs text-gray-500 mt-1 font-mono tracking-widest">GLOBAL INTELLIGENCE UNIT</p>
+        <p className="text-[10px] md:text-xs text-gray-500 mt-1 font-mono tracking-widest">GLOBAL INTELLIGENCE UNIT</p>
       </header>
 
-      {/* LEFT PANEL: SMART CARD */}
-      <div className="absolute top-32 left-8 z-10 w-80 pointer-events-none">
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 p-6 rounded-2xl shadow-2xl pointer-events-auto">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Target Analysis</p>
-                    <h2 className="text-3xl font-bold text-white leading-none">{stats?.name}</h2>
-                </div>
-                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${METRICS[mode].color.replace('text-', 'text-')}`}></div>
-            </div>
-
-            <div className="mb-6">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-mono font-light text-white">
-                        {stats?.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                    </span>
-                    <span className={`text-sm font-bold ${METRICS[mode].color}`}>
-                        {METRICS[mode].unit}
-                    </span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
-                <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Global Rank</p>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-white">#{stats?.rank}</span>
-                        <span className="text-xs text-gray-500">/ {stats?.total}</span>
-                    </div>
-                </div>
-                <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trend</p>
-                    <div className={`flex items-center gap-1 font-mono text-sm font-bold ${stats?.trend && stats.trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        <span>{stats?.trend && stats.trend >= 0 ? '▲' : '▼'}</span>
-                        <span>{stats?.trendPercent}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
-
-      {/* RIGHT PANEL: LEADERBOARD & CONTROLS */}
-      <div className="absolute top-6 right-8 z-10 flex flex-col gap-6 items-end pointer-events-none">
+      {/* METRIC SELECTOR: Horizontal Scroll on Mobile / Vertical on Desktop */}
+      <div className="absolute top-16 left-0 w-full px-4 md:top-6 md:right-8 md:left-auto md:w-auto z-10 pointer-events-none flex flex-col items-end gap-6">
         
-        {/* Metric Selectors */}
-        <div className="grid grid-cols-2 gap-2 pointer-events-auto">
+        {/* Buttons container */}
+        <div className="flex flex-row overflow-x-auto w-full md:w-auto md:grid md:grid-cols-2 gap-2 pointer-events-auto pb-2 md:pb-0 no-scrollbar">
             {(Object.keys(METRICS) as MetricType[]).map((m) => (
             <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider transition-all duration-300 border ${
+                className={`whitespace-nowrap px-3 py-2 md:px-4 md:py-2 rounded-lg text-[10px] md:text-xs font-bold tracking-wider transition-all duration-300 border flex-shrink-0 ${
                 mode === m 
                     ? `bg-${METRICS[m].color.split('-')[1]}-500/20 border-${METRICS[m].color.split('-')[1]}-500 text-white shadow-[0_0_15px_rgba(0,0,0,0.5)]`
                     : 'bg-black/40 border-white/10 text-gray-400 hover:bg-white/5 hover:text-white'
@@ -159,8 +115,8 @@ export default function Home() {
             ))}
         </div>
 
-        {/* LEADERBOARD CARD */}
-        <div className="w-64 backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-xl pointer-events-auto">
+        {/* LEADERBOARD: Hidden on Mobile, Visible on Desktop */}
+        <div className="hidden md:block w-64 backdrop-blur-xl bg-black/40 border border-white/10 p-4 rounded-xl pointer-events-auto">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pb-2 border-b border-white/10">
                 Top Leaders ({year})
             </h3>
@@ -182,15 +138,55 @@ export default function Home() {
                 ))}
             </div>
         </div>
-
       </div>
 
-      {/* BOTTOM: TIMELINE */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-8 pointer-events-none">
-        <div className="flex items-center gap-6 backdrop-blur-md bg-black/30 border border-white/10 px-6 py-4 rounded-full pointer-events-auto">
+      {/* SMART CARD: Bottom on Mobile / Top-Left on Desktop */}
+      <div className="absolute bottom-24 left-4 right-4 md:top-32 md:left-8 md:right-auto md:bottom-auto md:w-80 z-10 pointer-events-none">
+        <div className="backdrop-blur-xl bg-black/60 md:bg-black/40 border border-white/10 p-4 md:p-6 rounded-2xl shadow-2xl pointer-events-auto">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div>
+                    <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest mb-1">Target Analysis</p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white leading-none">{stats?.name}</h2>
+                </div>
+                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${METRICS[mode].color.replace('text-', 'text-')}`}></div>
+            </div>
+
+            <div className="mb-4 md:mb-6">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-4xl md:text-5xl font-mono font-light text-white">
+                        {stats?.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                    </span>
+                    <span className={`text-sm font-bold ${METRICS[mode].color}`}>
+                        {METRICS[mode].unit}
+                    </span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+                <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Rank</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-lg md:text-xl font-bold text-white">#{stats?.rank}</span>
+                        <span className="text-xs text-gray-500">/ {stats?.total}</span>
+                    </div>
+                </div>
+                <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trend</p>
+                    <div className={`flex items-center gap-1 font-mono text-sm font-bold ${stats?.trend && stats.trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        <span>{stats?.trend && stats.trend >= 0 ? '▲' : '▼'}</span>
+                        <span>{stats?.trendPercent}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* TIMELINE: Bottom Fixed */}
+      <div className="absolute bottom-6 left-0 w-full px-4 md:bottom-10 z-10 pointer-events-none">
+        <div className="flex items-center gap-4 md:gap-6 backdrop-blur-md bg-black/60 md:bg-black/30 border border-white/10 px-4 py-3 md:px-6 md:py-4 rounded-full max-w-2xl mx-auto pointer-events-auto">
             <button 
                 onClick={() => setYear(y => Math.max(2000, y - 1))}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
+                className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
             >
                 ◀
             </button>
@@ -211,18 +207,19 @@ export default function Home() {
             </div>
             <button 
                 onClick={() => setYear(y => Math.min(2022, y + 1))}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
+                className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
             >
                 ▶
             </button>
         </div>
       </div>
 
-      {/* 3D GLOBE */}
+      {/* 3D GLOBE - CONNECTED TO TARGET */}
       <GlobeViz 
         year={year} 
         mode={mode} 
         data={dataset} 
+        target={selectedCountry}
         onCountryClick={setSelectedCountry} 
       />
       

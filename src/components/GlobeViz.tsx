@@ -5,7 +5,7 @@ type GlobeProps = {
   year: number;
   mode: string;
   data: any;
-  target?: string;
+  target?: string; // This listens for the Leaderboard clicks
   onCountryClick: (code: string) => void;
 };
 
@@ -13,6 +13,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   const globeEl = useRef<HTMLDivElement>(null);
   const globeInstance = useRef<any>(null);
   const [geoJson, setGeoJson] = useState<any>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
 
   // 1. DATA CALCULATION
   const { maxVal } = useMemo(() => {
@@ -39,14 +40,47 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
   }, [data, year, mode]);
 
   useEffect(() => {
-    // Fetch borders - using a reliable CDN
     fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
        .then(r => r.json())
        .then(d => { if (d && d.features) setGeoJson(d.features); })
-       .catch(err => console.error("GeoJSON failed to load", err));
+       .catch(e => console.error("Geo load failed", e));
   }, []);
 
-  // 2. RENDER
+  // 2. HELPER: CALCULATE CENTER OF COUNTRY FOR FLY-TO
+  const getCentroid = (geometry: any) => {
+      if (!geometry) return null;
+      let coords = geometry.coordinates;
+      // Unwrap MultiPolygon to get the biggest polygon (usually the mainland)
+      if (geometry.type === 'MultiPolygon') {
+          // Simple approximation: take the first polygon (usually the largest in standard geojsons)
+          coords = coords[0];
+      }
+      
+      // Calculate average of the ring
+      // Polygon structure: [ [ [x, y], [x, y] ... ] ]
+      const points = coords[0]; 
+      let x = 0, y = 0;
+      points.forEach((p: any) => { x += p[0]; y += p[1]; });
+      
+      return { lat: y / points.length, lng: x / points.length };
+  };
+
+  // 3. EFFECT: FLY TO TARGET (When Leaderboard is clicked)
+  useEffect(() => {
+      if (!globeInstance.current || !geoJson || !target) return;
+      
+      // Find the feature
+      const country = geoJson.find((f: any) => f.id === target);
+      if (country) {
+          const center = getCentroid(country.geometry);
+          if (center) {
+              // Smooth Fly Animation
+              globeInstance.current.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.0 }, 1500);
+          }
+      }
+  }, [target, geoJson]);
+
+  // 4. RENDER
   useEffect(() => {
     if (!globeEl.current) return;
 
@@ -58,33 +92,44 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (!globeInstance.current) {
                 // @ts-ignore
                 globeInstance.current = Globe()(globeEl.current)
-                    .backgroundColor('rgba(0,0,0,0)') // Transparent Background
+                    .backgroundColor('rgba(0,0,0,0)')
                     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
                     .width(window.innerWidth).height(window.innerHeight)
                     .atmosphereColor('#7ca4ff')
                     .atmosphereAltitude(0.12)
+                    // HOVER INTERACTION
                     .onPolygonHover((hoverD: any) => {
-                        if (globeEl.current) {
-                            globeEl.current.style.cursor = hoverD ? 'pointer' : 'default';
+                        setHoverId(hoverD ? hoverD.id : null);
+                        if (globeInstance.current) {
+                            // Pause rotation when hovering to let user focus
+                            globeInstance.current.controls().autoRotate = !hoverD;
+                            globeEl.current!.style.cursor = hoverD ? 'pointer' : 'default';
                         }
                     }) 
-                    .onPolygonClick((d: any) => { if (onCountryClick) onCountryClick(d.id); });
+                    // CLICK INTERACTION
+                    .onPolygonClick((d: any) => { 
+                        if (onCountryClick) onCountryClick(d.id);
+                        const center = getCentroid(d.geometry);
+                        if (center) {
+                            globeInstance.current.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.0 }, 1000);
+                        }
+                    });
 
                 globeInstance.current.controls().autoRotate = true;
-                globeInstance.current.controls().autoRotateSpeed = 0.3;
+                globeInstance.current.controls().autoRotateSpeed = 0.5;
             }
 
-            // 3. COLORS
+            // --- VISUALIZATION LOGIC ---
             const getBaseColor = (metric: string) => {
                 switch(metric) {
-                    case 'ENERGY': return '0, 255, 100';    // Emerald
-                    case 'WEALTH': return '255, 215, 0';    // Gold
-                    case 'CARBON': return '255, 50, 50';    // Red
-                    case 'INFLATION': return '255, 100, 0'; // Orange
-                    case 'WATER': return '0, 150, 255';     // Blue
-                    case 'INTERNET': return '0, 255, 255';  // Cyan
-                    case 'LIFE': return '255, 0, 255';      // Magenta
-                    case 'RENEWABLES': return '100, 255, 0';// Lime
+                    case 'ENERGY': return '0, 255, 100';    
+                    case 'WEALTH': return '255, 215, 0';    
+                    case 'CARBON': return '255, 50, 50';    
+                    case 'INFLATION': return '255, 100, 0'; 
+                    case 'WATER': return '0, 150, 255';     
+                    case 'INTERNET': return '0, 255, 255';  
+                    case 'LIFE': return '255, 0, 255';      
+                    case 'RENEWABLES': return '100, 255, 0';
                     default: return '255, 255, 255';        
                 }
             };
@@ -99,6 +144,9 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
                 const key = keyMap[mode];
                 const metrics = data[id][key];
                 if (!metrics || !Array.isArray(metrics)) return null;
+                
+                // Find nearest logic inside globe for coloring? No, keeping it simple: match year.
+                // Or use simple find for speed.
                 const entry = metrics.find((d: any) => parseInt(d.date) === year);
                 return entry ? parseFloat(entry.value) : null;
             };
@@ -106,15 +154,27 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
             if (geoJson) {
                 globeInstance.current.polygonsData(geoJson);
                 globeInstance.current.polygonSideColor(() => 'rgba(0,0,0,0)');
-                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)'); // Crystal Clear
-                
+                globeInstance.current.polygonCapColor(() => 'rgba(0,0,0,0)'); // Still Crystal Clear
+
+                // BORDER COLOR - Reacts to Hover
                 globeInstance.current.polygonStrokeColor((d: any) => {
+                    // IF HOVERED: Turn White
+                    if (d.id === hoverId) return 'rgba(255, 255, 255, 1)';
+
                     const val = getVal(d.id);
                     if (val === null) return 'rgba(255,255,255, 0.1)'; 
                     const baseRgb = getBaseColor(mode);
                     return `rgba(${baseRgb}, 1)`;
                 });
-                globeInstance.current.polygonAltitude(0.006);
+
+                // ALTITUDE - Reacts to Hover (The "Pop Up" Effect)
+                globeInstance.current.polygonAltitude((d: any) => {
+                    if (d.id === hoverId) return 0.04; // Lifts up when hovered
+                    return 0.006;
+                });
+                
+                // Important: Trigger update cycle for interactions
+                globeInstance.current.polygonsTransitionDuration(300);
             }
 
         } catch (e) {
@@ -124,7 +184,7 @@ export default function GlobeViz({ year, mode, data, target, onCountryClick }: G
 
     loadLibrariesAndRender();
 
-  }, [geoJson, data, year, mode, maxVal]);
+  }, [geoJson, data, year, mode, maxVal, hoverId]); // Dependencies include hoverId to trigger re-render of colors
 
   useEffect(() => {
      const handleResize = () => { 
