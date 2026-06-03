@@ -1,6 +1,6 @@
 {
 "meta": {
-"last_updated": "2026-06-02 02:42:59",
+"last_updated": "2026-06-03 02:51:39",
 "count": 275
 },
 "data": [
@@ -135716,103 +135716,103 @@
 "co2": [
 {
 "date": "2000",
-"value": 0.259
+"value": 0.278
 },
 {
 "date": "2001",
-"value": 0.22
+"value": 0.236
 },
 {
 "date": "2002",
-"value": 0.244
+"value": 0.263
 },
 {
 "date": "2003",
-"value": 0.325
+"value": 0.35
 },
 {
 "date": "2004",
-"value": 0.306
+"value": 0.33
 },
 {
 "date": "2005",
-"value": 0.295
+"value": 0.318
 },
 {
 "date": "2006",
-"value": 0.25
+"value": 0.269
 },
 {
 "date": "2007",
-"value": 0.245
+"value": 0.264
 },
 {
 "date": "2008",
-"value": 0.239
+"value": 0.257
 },
 {
 "date": "2009",
-"value": 0.387
+"value": 0.414
 },
 {
 "date": "2010",
-"value": 0.386
+"value": 0.41
 },
 {
 "date": "2011",
-"value": 0.362
+"value": 0.385
 },
 {
 "date": "2012",
-"value": 0.312
+"value": 0.333
 },
 {
 "date": "2013",
-"value": 0.224
+"value": 0.241
 },
 {
 "date": "2014",
-"value": 0.199
+"value": 0.215
 },
 {
 "date": "2015",
-"value": 0.235
+"value": 0.254
 },
 {
 "date": "2016",
-"value": 0.292
+"value": 0.318
 },
 {
 "date": "2017",
-"value": 0.237
+"value": 0.261
 },
 {
 "date": "2018",
-"value": 0.246
+"value": 0.273
 },
 {
 "date": "2019",
-"value": 0.279
+"value": 0.31
 },
 {
 "date": "2020",
-"value": 0.317
+"value": 0.353
 },
 {
 "date": "2021",
-"value": 0.295
+"value": 0.33
 },
 {
 "date": "2022",
-"value": 0.301
+"value": 0.339
 },
 {
 "date": "2023",
-"value": 0.287
+"value": 0.325
 },
 {
 "date": "2024",
-"value": 0.289
+"value": 0.328
 }
 ],
 "gdp": [
